@@ -1,4 +1,4 @@
-package com.example.utsquranappq.ui.theme
+package com.example.utsquranappq.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text

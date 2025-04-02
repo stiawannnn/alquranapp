@@ -1,11 +1,8 @@
-package com.example.utsquranappq.ui.theme
-import android.os.Bundle
+package com.example.utsquranappq.ui
 import android.icu.text.SimpleDateFormat
 import android.icu.util.TimeZone
 import java.util.Locale
 import java.util.Date
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -29,9 +26,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.utsquranappq.R
 import kotlinx.coroutines.delay
 
@@ -40,8 +34,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun HomeScreen(navController: NavController) {
     Scaffold(
-        topBar = { TopBar() },
-        bottomBar = { BottomNavigationBar(navController) } // Pass navController
+        topBar = { TopBar() }, // Pass navController
     ) { padding ->
         // Membuat brush dengan gradien 3 warna
         val gradientBrush = Brush.linearGradient(

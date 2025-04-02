@@ -1,4 +1,4 @@
-package com.example.utsquranappq.ui.theme
+package com.example.utsquranappq.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,6 +1,5 @@
-package com.example.utsquranappq.ui.theme
+package com.example.utsquranappq.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
