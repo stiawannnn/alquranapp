@@ -1,4 +1,4 @@
-package com.example.utsquranappq.ui
+package com.example.utsquranappq.navigation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,6 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.utsquranappq.ui.BottomNavigationBar
+import com.example.utsquranappq.ui.DoaScreen
+import com.example.utsquranappq.ui.HomeScreen
 
 class HomeScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

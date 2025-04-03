@@ -191,12 +191,7 @@ fun TabSection() {
     }
 }
 
-@Composable
-fun SurahTab() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Surah Tab", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-    }
-}
+
 
 @Composable
 fun HalamanTab() {
