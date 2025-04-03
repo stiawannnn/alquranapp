@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
+import com.example.utsquranappq.utiils.getTranslation
 
 @Composable
 fun SurahTab() {
@@ -33,8 +34,13 @@ fun SurahTab() {
             .background(Color(0xFF121212)) // Dark mode
             .padding(horizontal = 16.dp)
     ) {
-        LazyColumn {
+        LazyColumn ( modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 110.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp)
+        ){
+
             items(surahList) { surah ->
+                val (namaSurah, artiSurah, jenisWahyu) = getTranslation(surah.englishName, surah.englishNameTranslation, surah.revelationType)
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -73,7 +79,7 @@ fun SurahTab() {
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "${surah.englishName}",
+                                text = "${namaSurah}",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold
@@ -82,14 +88,14 @@ fun SurahTab() {
                             )
 
                             Text(
-                                text = "${surah.englishNameTranslation}",
+                                text = "${artiSurah}",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = Color.Gray
                                 )
                             )
 
                                 Text(
-                                    text = "${surah.revelationType.uppercase()} • ${surah.numberOfAyahs} Ayat",
+                                    text = "${jenisWahyu} • ${surah.numberOfAyahs} Ayat",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = Color.Gray
                                 )
