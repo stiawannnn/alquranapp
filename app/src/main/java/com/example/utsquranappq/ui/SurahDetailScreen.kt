@@ -52,6 +52,7 @@ fun SurahDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.error.collectAsState()
     val surahList by surahViewModel.surahList.collectAsState()
+    val selectedQari by viewModel.selectedQari.collectAsState()
     val currentSurah = surahList.find { it.number == surahNumber }
 
     // State untuk menu dan scroll
@@ -168,7 +169,7 @@ fun SurahDetailScreen(
                         }
                         items(surahDetail.groupBy { it.numberInSurah }.keys.toList()) { numberInSurah ->
                             val ayahs = surahDetail.filter { it.numberInSurah == numberInSurah }
-                            AyahCard(ayahs)
+                            AyahCard(ayahs, selectedQari)
                         }
                     }
                 }
@@ -179,7 +180,10 @@ fun SurahDetailScreen(
         if (showVoiceDialog) {
             VoiceSelectionDialog(
                 onDismiss = { showVoiceDialog = false },
-                surahDetail = surahDetail
+                surahDetail = surahDetail,
+                onQariSelected = { qariIdentifier ->
+                    viewModel.selectQari(qariIdentifier) // Panggil fungsi ViewModel
+                }
             )
         }
 
@@ -260,7 +264,7 @@ fun detailldariayat(currentSurah: Surah?) {
     }
 }
 @Composable
-fun AyahCard(ayahs: List<AyahEdition>) {
+fun AyahCard(ayahs: List<AyahEdition>, selectedQari: String?) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -296,10 +300,10 @@ fun AyahCard(ayahs: List<AyahEdition>) {
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
-                    "ar.alafasy" -> {
-                        // Tambahkan kontrol audio untuk edisi ar.alafasy
-                        ayah.audio?.let { audioUrl ->
-                            AudioPlayer(audioUrl = audioUrl, ayahNumber = ayah.numberInSurah)
+                    else -> {
+                        // Filter audio berdasarkan qari yang dipilih
+                        if (ayah.audio != null && (selectedQari == null || ayah.edition.identifier == selectedQari)) {
+                            AudioPlayer(audioUrl = ayah.audio, ayahNumber = ayah.numberInSurah, qariName = ayah.edition.englishName)
                         }
                     }
                 }
@@ -310,12 +314,11 @@ fun AyahCard(ayahs: List<AyahEdition>) {
 }
 
 @Composable
-fun AudioPlayer(audioUrl: String, ayahNumber: Int) {
+fun AudioPlayer(audioUrl: String, ayahNumber: Int, qariName: String) {
     val mediaPlayer = remember { MediaPlayer() }
     var isPlaying by remember { mutableStateOf(false) }
     var isPrepared by remember { mutableStateOf(false) }
 
-    // Mengatur MediaPlayer saat pertama kali dibuat
     LaunchedEffect(audioUrl) {
         try {
             mediaPlayer.reset()
@@ -326,14 +329,13 @@ fun AudioPlayer(audioUrl: String, ayahNumber: Int) {
             }
             mediaPlayer.setOnCompletionListener {
                 isPlaying = false
-                mediaPlayer.seekTo(0) // Kembali ke awal setelah selesai
+                mediaPlayer.seekTo(0)
             }
         } catch (e: Exception) {
             Log.e("AudioPlayer", "Error preparing audio: ${e.message}")
         }
     }
 
-    // Membersihkan MediaPlayer saat Composable dihapus
     DisposableEffect(Unit) {
         onDispose {
             mediaPlayer.release()
@@ -347,7 +349,7 @@ fun AudioPlayer(audioUrl: String, ayahNumber: Int) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Audio Ayat $ayahNumber",
+            text = "Audio Ayat $ayahNumber ($qariName)",
             style = MaterialTheme.typography.bodySmall,
             color = Color.White.copy(alpha = 0.7f)
         )
@@ -366,7 +368,7 @@ fun AudioPlayer(audioUrl: String, ayahNumber: Int) {
             },
             enabled = isPrepared,
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isPlaying) Color.Red else Color.Green
+                containerColor = if (isPlaying) Color.White else Color.Green
             )
         ) {
             Text(
@@ -380,24 +382,37 @@ fun AudioPlayer(audioUrl: String, ayahNumber: Int) {
 @Composable
 fun VoiceSelectionDialog(
     onDismiss: () -> Unit,
-    surahDetail: List<AyahEdition>
+    surahDetail: List<AyahEdition>,
+    onQariSelected: (String?) -> Unit // Callback untuk qari yang dipilih
 ) {
     val qariList = surahDetail.filter { it.edition.language == "ar" && it.audio != null }
-        .map { it.edition.englishName }.distinct()
+        .map { it.edition }.distinctBy { it.identifier }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Pilih Suara Qari") },
         text = {
             LazyColumn {
-                items(qariList) { qari ->
+                // Tambahkan opsi "Semua Qari"
+                item {
                     Text(
-                        text = qari,
+                        text = "Semua Qari",
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                Log.d("VoiceSelection", "Selected qari: $qari")
-                                // Logika untuk memilih qari tertentu (misalnya filter UI)
+                                onQariSelected(null) // Null untuk menampilkan semua qari
+                                onDismiss()
+                            }
+                            .padding(8.dp)
+                    )
+                }
+                items(qariList) { qari ->
+                    Text(
+                        text = qari.englishName,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onQariSelected(qari.identifier) // Kirim identifier qari
                                 onDismiss()
                             }
                             .padding(8.dp)
@@ -412,7 +427,6 @@ fun VoiceSelectionDialog(
         }
     )
 }
-
 // Dialog untuk mencari nomor ayat
 @Composable
 fun SearchAyahDialog(

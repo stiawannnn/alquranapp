@@ -20,6 +20,9 @@ class SurahDetailViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val _selectedQari = MutableStateFlow<String?>("ar.alafasy") // Null berarti semua qari ditampilkan
+    val selectedQari: StateFlow<String?> = _selectedQari
+
     fun fetchSurahDetail(surahNumber: Int) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -51,4 +54,10 @@ class SurahDetailViewModel : ViewModel() {
             }
         }
     }
+
+// Fungsi untuk mengatur qari yang dipilih
+fun selectQari(qariIdentifier: String?) {
+    _selectedQari.value = qariIdentifier
+    Log.d("SurahDetailViewModel", "Selected qari: $qariIdentifier")
+}
 }
