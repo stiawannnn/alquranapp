@@ -25,7 +25,7 @@ class SurahDetailViewModel : ViewModel() {
             _isLoading.value = true
             _error.value = null
             try {
-                val editions = "quran-uthmani,en.transliteration,id.indonesian"
+                val editions = "quran-tajweed,en.transliteration,id.indonesian,"
                 val ayahList = mutableListOf<AyahEdition>()
                 val surahResponse = repository.getSurah(surahNumber)
                 if (surahResponse.code == 200) {
