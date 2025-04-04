@@ -25,7 +25,8 @@ class SurahDetailViewModel : ViewModel() {
             _isLoading.value = true
             _error.value = null
             try {
-                val editions = "quran-tajweed,en.transliteration,id.indonesian,"
+                // Tambahkan ar.alafasy ke daftar edisi
+                val editions = "quran-tajweed,en.transliteration,id.indonesian,ar.alafasy"
                 val ayahList = mutableListOf<AyahEdition>()
                 val surahResponse = repository.getSurah(surahNumber)
                 if (surahResponse.code == 200) {
@@ -34,7 +35,7 @@ class SurahDetailViewModel : ViewModel() {
                         val reference = "$surahNumber:${ayah.numberInSurah}"
                         val response = repository.getAyahEditions(reference, editions)
                         if (response.code == 200) {
-                            ayahList.addAll(response.data)
+                            ayahList.addAll(response.data) // Semua edisi (termasuk audio) ditambahkan
                         }
                     }
                     _surahDetail.value = ayahList

@@ -17,7 +17,8 @@ data class AyahEdition(
     val ruku: Int,
     val hizbQuarter: Int,
     val sajda: Boolean,
-    val edition: Edition
+    val edition: Edition,
+    val audio: String? = null
 )
 
 data class SurahInfo(
@@ -35,7 +36,9 @@ data class Edition(
     val name: String,
     val englishName: String,
     val format: String,
-    val type: String
+    val type: String,
+    val direction: String
+
 )
 
 data class Sajda(

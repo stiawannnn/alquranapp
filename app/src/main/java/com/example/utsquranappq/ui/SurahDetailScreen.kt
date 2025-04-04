@@ -1,5 +1,6 @@
 package com.example.utsquranappq.ui
 
+import android.media.MediaPlayer
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -48,8 +49,6 @@ fun SurahDetailScreen(
     val surahList by surahViewModel.surahList.collectAsState()
     val currentSurah = surahList.find { it.number == surahNumber }
 
-
-
     LaunchedEffect(surahNumber) {
         Log.d("SurahDetailScreen", "Fetching data for surahNumber: $surahNumber")
         viewModel.fetchSurahDetail(surahNumber)
@@ -94,9 +93,7 @@ fun SurahDetailScreen(
                     item {
                         detailldariayat(currentSurah = currentSurah)
                     }
-
-                    items(
-                        surahDetail.groupBy { it.numberInSurah }.keys.toList()) { numberInSurah ->
+                    items(surahDetail.groupBy { it.numberInSurah }.keys.toList()) { numberInSurah ->
                         val ayahs = surahDetail.filter { it.numberInSurah == numberInSurah }
                         AyahCard(ayahs)
                     }
@@ -106,6 +103,7 @@ fun SurahDetailScreen(
     }
 }
 
+// Fungsi detailldariayat tetap sama seperti sebelumnya
 @Composable
 fun detailldariayat(currentSurah: Surah?) {
     val (namaSurah, artiSurah, jenisWahyu) = getTranslation(
@@ -170,10 +168,6 @@ fun detailldariayat(currentSurah: Surah?) {
         }
     }
 }
-
-
-
-
 @Composable
 fun AyahCard(ayahs: List<AyahEdition>) {
     Card(
@@ -182,22 +176,21 @@ fun AyahCard(ayahs: List<AyahEdition>) {
             .padding(8.dp),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
-            containerColor =  Color(0xFF0F0218),
-            contentColor =  Color(0xFFAA9AAB)
+            containerColor = Color(0xFF0F0218),
+            contentColor = Color(0xFFAA9AAB)
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             ayahs.forEach { ayah ->
                 when (ayah.edition.identifier) {
                     "quran-tajweed" -> {
-                        Log.d("AyahText", "Raw text: ${ayah.text}") // Log
+                        Log.d("AyahText", "Raw text: ${ayah.text}")
                         val annotatedText = parseTajweedText("${ayah.numberInSurah}. ${ayah.text}")
                         Text(
                             text = annotatedText,
                             style = MaterialTheme.typography.bodyLarge,
                             fontSize = 27.sp,
-                            color = Color.White,
-
+                            color = Color.White
                         )
                     }
                     "en.transliteration" -> {
@@ -212,6 +205,12 @@ fun AyahCard(ayahs: List<AyahEdition>) {
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+                    "ar.alafasy" -> {
+                        // Tambahkan kontrol audio untuk edisi ar.alafasy
+                        ayah.audio?.let { audioUrl ->
+                            AudioPlayer(audioUrl = audioUrl, ayahNumber = ayah.numberInSurah)
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -219,3 +218,70 @@ fun AyahCard(ayahs: List<AyahEdition>) {
     }
 }
 
+@Composable
+fun AudioPlayer(audioUrl: String, ayahNumber: Int) {
+    val mediaPlayer = remember { MediaPlayer() }
+    var isPlaying by remember { mutableStateOf(false) }
+    var isPrepared by remember { mutableStateOf(false) }
+
+    // Mengatur MediaPlayer saat pertama kali dibuat
+    LaunchedEffect(audioUrl) {
+        try {
+            mediaPlayer.reset()
+            mediaPlayer.setDataSource(audioUrl)
+            mediaPlayer.prepareAsync()
+            mediaPlayer.setOnPreparedListener {
+                isPrepared = true
+            }
+            mediaPlayer.setOnCompletionListener {
+                isPlaying = false
+                mediaPlayer.seekTo(0) // Kembali ke awal setelah selesai
+            }
+        } catch (e: Exception) {
+            Log.e("AudioPlayer", "Error preparing audio: ${e.message}")
+        }
+    }
+
+    // Membersihkan MediaPlayer saat Composable dihapus
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaPlayer.release()
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Audio Ayat $ayahNumber",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = 0.7f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Button(
+            onClick = {
+                if (isPrepared) {
+                    if (isPlaying) {
+                        mediaPlayer.pause()
+                        isPlaying = false
+                    } else {
+                        mediaPlayer.start()
+                        isPlaying = true
+                    }
+                }
+            },
+            enabled = isPrepared,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isPlaying) Color.Red else Color.Green
+            )
+        ) {
+            Text(
+                text = if (isPlaying) "Pause" else "Play",
+                color = Color.White
+            )
+        }
+    }
+}

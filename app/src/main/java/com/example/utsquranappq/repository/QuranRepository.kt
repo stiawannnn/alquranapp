@@ -27,8 +27,10 @@ class QuranRepository {
                 response.body() ?: throw Exception("No data")
             } else {
                 throw Exception("API Error: ${response.code()} - ${response.message()}")
+
             }
+        }
 
 
-    }
 }
+
