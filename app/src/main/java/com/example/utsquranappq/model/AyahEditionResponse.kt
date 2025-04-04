@@ -16,7 +16,6 @@ data class AyahEdition(
     val page: Int,
     val ruku: Int,
     val hizbQuarter: Int,
-    val sajda: Boolean,
     val edition: Edition,
     val audio: String? = null
 )
@@ -41,8 +40,3 @@ data class Edition(
 
 )
 
-data class Sajda(
-    val id: Int,
-    val recommended: Boolean,
-    val obligatory: Boolean
-)

@@ -59,7 +59,8 @@ fun SurahDetailScreen(
     var showVoiceDialog by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    var targetAyahNumber by remember { mutableStateOf<Int?>(null) } // State untuk nomor ayat yang dicari
+    var targetAyahNumber by remember { mutableStateOf<Int?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() } // Tambahkan SnackbarHostState
 
     LaunchedEffect(surahNumber) {
         Log.d("SurahDetailScreen", "Fetching data for surahNumber: $surahNumber")
@@ -72,10 +73,11 @@ fun SurahDetailScreen(
             val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
             val index = ayahKeys.indexOf(ayahNumber)
             if (index != -1) {
-                listState.animateScrollToItem(index + 1) // +1 karena ada header
+                listState.scrollToItem(index + 1) // +1 karena ada header
                 Log.d("SurahDetailScreen", "Scrolled to ayah: $ayahNumber at index: ${index + 1}")
             } else {
                 Log.w("SurahDetailScreen", "Ayah number $ayahNumber not found")
+                snackbarHostState.showSnackbar("Ayat nomor $ayahNumber tidak ditemukan")//bisatambahdurasi
             }
         }
     }
@@ -120,7 +122,8 @@ fun SurahDetailScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) } // Tambahkan SnackbarHost ke Scaffold
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when {
