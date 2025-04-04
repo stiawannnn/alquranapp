@@ -26,7 +26,7 @@ class SurahDetailViewModel : ViewModel() {
             _error.value = null
             try {
                 // Tambahkan ar.alafasy ke daftar edisi
-                val editions = "quran-tajweed,en.transliteration,id.indonesian,ar.alafasy"
+                val editions = "quran-tajweed,en.transliteration,id.indonesian,ar.alafasy,ar.abdurrahmaansudais,ar.husary,ar.minshawi,ar.ahmedajamy"
                 val ayahList = mutableListOf<AyahEdition>()
                 val surahResponse = repository.getSurah(surahNumber)
                 if (surahResponse.code == 200) {

@@ -4,10 +4,13 @@ import android.media.MediaPlayer
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,11 +26,13 @@ import com.example.utsquranappq.viewmodel.SurahDetailViewModel
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import com.example.utsquranappq.model.Surah
 import com.example.utsquranappq.utiils.getTranslation
 import com.example.utsquranappq.utiils.parseTajweedText
 import kotlinx.coroutines.delay
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SurahDetailScreen(
     surahNumber: Int?,
@@ -49,60 +54,143 @@ fun SurahDetailScreen(
     val surahList by surahViewModel.surahList.collectAsState()
     val currentSurah = surahList.find { it.number == surahNumber }
 
+    // State untuk menu dan scroll
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showVoiceDialog by remember { mutableStateOf(false) }
+    var showSearchDialog by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    var targetAyahNumber by remember { mutableStateOf<Int?>(null) } // State untuk nomor ayat yang dicari
+
     LaunchedEffect(surahNumber) {
         Log.d("SurahDetailScreen", "Fetching data for surahNumber: $surahNumber")
         viewModel.fetchSurahDetail(surahNumber)
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        when {
-            isLoading -> {
-                Log.d("SurahDetailScreen", "Loading data...")
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+    // Efek untuk scroll ke ayat yang dicari
+    LaunchedEffect(targetAyahNumber) {
+        targetAyahNumber?.let { ayahNumber ->
+            val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
+            val index = ayahKeys.indexOf(ayahNumber)
+            if (index != -1) {
+                listState.animateScrollToItem(index + 1) // +1 karena ada header
+                Log.d("SurahDetailScreen", "Scrolled to ayah: $ayahNumber at index: ${index + 1}")
+            } else {
+                Log.w("SurahDetailScreen", "Ayah number $ayahNumber not found")
             }
-            errorMessage != null -> {
-                Log.e("SurahDetailScreen", "Error encountered: $errorMessage")
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = errorMessage ?: "Terjadi kesalahan",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-            surahDetail.isEmpty() -> {
-                Log.w("SurahDetailScreen", "No ayahs found for this Surah")
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Tidak ada data ayat", style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-            else -> {
-                Log.d("SurahDetailScreen", "Displaying ayahs")
-                LazyColumn {
-                    item {
-                        detailldariayat(currentSurah = currentSurah)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Surah ${currentSurah?.name ?: ""}") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.arrowback), // Ganti dengan ikon Anda
+                            contentDescription = "Kembali"
+                        )
                     }
-                    items(surahDetail.groupBy { it.numberInSurah }.keys.toList()) { numberInSurah ->
-                        val ayahs = surahDetail.filter { it.numberInSurah == numberInSurah }
-                        AyahCard(ayahs)
+                },
+                actions = {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.qur6), // Ganti dengan ikon Anda
+                            contentDescription = "Menu"
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Pilih Suara") },
+                            onClick = {
+                                showVoiceDialog = true
+                                menuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Search Nomor Ayat") },
+                            onClick = {
+                                showSearchDialog = true
+                                menuExpanded = false
+                            }
+                        )
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            when {
+                isLoading -> {
+                    Log.d("SurahDetailScreen", "Loading data...")
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                errorMessage != null -> {
+                    Log.e("SurahDetailScreen", "Error encountered: $errorMessage")
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = errorMessage ?: "Terjadi kesalahan",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+                surahDetail.isEmpty() -> {
+                    Log.w("SurahDetailScreen", "No ayahs found for this Surah")
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Tidak ada data ayat", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+                else -> {
+                    Log.d("SurahDetailScreen", "Displaying ayahs")
+                    LazyColumn(
+                        state = listState
+                    ) {
+                        item {
+                            detailldariayat(currentSurah = currentSurah)
+                        }
+                        items(surahDetail.groupBy { it.numberInSurah }.keys.toList()) { numberInSurah ->
+                            val ayahs = surahDetail.filter { it.numberInSurah == numberInSurah }
+                            AyahCard(ayahs)
+                        }
                     }
                 }
             }
         }
+
+        // Dialog Pilih Suara
+        if (showVoiceDialog) {
+            VoiceSelectionDialog(
+                onDismiss = { showVoiceDialog = false },
+                surahDetail = surahDetail
+            )
+        }
+
+        // Dialog Search Nomor Ayat
+        if (showSearchDialog) {
+            SearchAyahDialog(
+                onDismiss = { showSearchDialog = false },
+                onSearch = { ayahNumber ->
+                    targetAyahNumber = ayahNumber.toIntOrNull() // Set nomor ayat untuk trigger scroll
+                }
+            )
+        }
     }
 }
-
 // Fungsi detailldariayat tetap sama seperti sebelumnya
 @Composable
 fun detailldariayat(currentSurah: Surah?) {
@@ -284,4 +372,75 @@ fun AudioPlayer(audioUrl: String, ayahNumber: Int) {
             )
         }
     }
+}
+// Dialog untuk memilih suara
+@Composable
+fun VoiceSelectionDialog(
+    onDismiss: () -> Unit,
+    surahDetail: List<AyahEdition>
+) {
+    val qariList = surahDetail.filter { it.edition.language == "ar" && it.audio != null }
+        .map { it.edition.englishName }.distinct()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pilih Suara Qari") },
+        text = {
+            LazyColumn {
+                items(qariList) { qari ->
+                    Text(
+                        text = qari,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                Log.d("VoiceSelection", "Selected qari: $qari")
+                                // Logika untuk memilih qari tertentu (misalnya filter UI)
+                                onDismiss()
+                            }
+                            .padding(8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Tutup")
+            }
+        }
+    )
+}
+
+// Dialog untuk mencari nomor ayat
+@Composable
+fun SearchAyahDialog(
+    onDismiss: () -> Unit,
+    onSearch: (String) -> Unit
+) {
+    var ayahNumber by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Cari Nomor Ayat") },
+        text = {
+            TextField(
+                value = ayahNumber,
+                onValueChange = { ayahNumber = it },
+                label = { Text("Masukkan nomor ayat") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSearch(ayahNumber)
+                onDismiss()
+            }) {
+                Text("Cari")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal")
+            }
+        }
+    )
 }
