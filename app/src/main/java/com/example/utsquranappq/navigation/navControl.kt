@@ -1,6 +1,7 @@
 package com.example.utsquranappq.navigation
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.utsquranappq.ui.BottomNavigationBar
 import com.example.utsquranappq.ui.DoaScreen
 import com.example.utsquranappq.ui.HomeScreen
+import com.example.utsquranappq.ui.SurahDetailScreen
+import com.example.utsquranappq.ui.SurahTab
 
 class HomeScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +32,12 @@ class HomeScreenActivity : ComponentActivity() {
                 ) {
                     composable("home") { HomeScreen(navController) }
                     composable("quran") { DoaScreen() }
+                    composable("surahTab") { SurahTab(navController) }
+                    composable("surahDetail/{surahNumber}") { backStackEntry ->
+                        val surahNumber = backStackEntry.arguments?.getString("surahNumber")?.toIntOrNull()
+                        Log.d("Navigation", "Navigating to SurahDetailScreen with number: $surahNumber")
+                        SurahDetailScreen(surahNumber, navController)
+                    }
                 }
             }
         }

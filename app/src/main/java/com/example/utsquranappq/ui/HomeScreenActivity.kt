@@ -50,7 +50,7 @@ fun HomeScreen(navController: NavController) {
                 .padding(padding)
         ) {
             GreetingSection()
-            TabSection()
+            TabSection(navController)
         }
     }
 }
@@ -156,7 +156,7 @@ fun getCurrentTime(): String {
 
 
 @Composable
-fun TabSection() {
+fun TabSection(navController: NavController) {
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabTitles = listOf("Surah", "Page", "Juz", "Hizb", "Ruku")
 
@@ -182,7 +182,7 @@ fun TabSection() {
             }
         }
         when (selectedTabIndex) {
-            0 -> SurahTab()
+            0 -> SurahTab(navController)
             1 -> HalamanTab()
             2 -> JuzTab()
             3 -> HizbTab()
