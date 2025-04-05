@@ -2,7 +2,6 @@ package com.example.utsquranappq.ui
 
 import android.media.MediaPlayer
 import android.util.Log
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +20,7 @@ import com.example.utsquranappq.R
 import com.example.utsquranappq.model.AyahEdition
 import com.example.utsquranappq.utiils.parseTajweedText
 import com.example.utsquranappq.viewmodel.JuzViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,8 +44,14 @@ fun JuzDetailScreen(
     var selectedQari by remember { mutableStateOf<String?>(null) }
     val mediaPlayer = remember { MediaPlayer() }
     var isPlayingAll by remember { mutableStateOf(false) }
-    var isPaused by remember { mutableStateOf(false) }
+    var currentPlayingAyah by remember { mutableStateOf<Int?>(null) }
     val coroutineScope = rememberCoroutineScope()
+
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaPlayer.release()
+        }
+    }
 
     LaunchedEffect(juzNumber) {
         viewModel.fetchJuzDetail(juzNumber)
@@ -102,28 +108,27 @@ fun JuzDetailScreen(
                                 selectedQari = selectedQari,
                                 mediaPlayer = mediaPlayer,
                                 isPlayingAll = isPlayingAll,
-                                isPaused = isPaused,
+                                currentPlayingAyah = currentPlayingAyah,
                                 onTogglePlayAll = {
-                                    isPlayingAll = !isPlayingAll
-                                    if (isPlayingAll) {
+                                    if (!isPlayingAll && selectedQari != null) {
+                                        isPlayingAll = true
                                         coroutineScope.launch {
                                             playAllAudio(
                                                 ayahs = ayahs,
                                                 selectedQari = selectedQari,
-                                                allAyahs = ayahs,
-                                                currentAyahNumber = 1,
                                                 mediaPlayer = mediaPlayer,
-                                                getIsPlayingAll = { isPlayingAll },
-                                                getIsPaused = { isPaused },
+                                                onAyahPlaying = { ayahNumber -> currentPlayingAyah = ayahNumber },
                                                 onFinished = {
                                                     isPlayingAll = false
+                                                    currentPlayingAyah = null
                                                 }
-
                                             )
                                         }
                                     } else {
-                                        mediaPlayer.pause()
-                                        isPaused = true
+                                        isPlayingAll = false
+                                        mediaPlayer.stop()
+                                        mediaPlayer.reset()
+                                        currentPlayingAyah = null
                                     }
                                 }
                             )
@@ -139,6 +144,7 @@ fun JuzDetailScreen(
                 surahDetail = juzDetail,
                 onQariSelected = { qari ->
                     selectedQari = qari
+                    showQariDialog = false
                 }
             )
         }
@@ -152,7 +158,7 @@ fun SurahCardOnlyText(
     selectedQari: String?,
     mediaPlayer: MediaPlayer,
     isPlayingAll: Boolean,
-    isPaused: Boolean,
+    currentPlayingAyah: Int?,
     onTogglePlayAll: () -> Unit
 ) {
     Card(
@@ -175,8 +181,20 @@ fun SurahCardOnlyText(
                     text = "Surah: $surahName",
                     style = MaterialTheme.typography.titleMedium.copy(color = Color.White)
                 )
-                TextButton(onClick = { onTogglePlayAll() }) {
-                    Text(if (isPlayingAll) "Pause All" else "Play All", color = Color.Green)
+                TextButton(
+                    onClick = {
+                        if (selectedQari == null) {
+                            // Anda mungkin ingin menambahkan toast atau dialog untuk memilih qari terlebih dahulu
+                        } else {
+                            onTogglePlayAll()
+                        }
+                    },
+                    enabled = selectedQari != null
+                ) {
+                    Text(
+                        if (isPlayingAll) "Stop All" else "Play All",
+                        color = if (selectedQari != null) Color.Green else Color.Gray
+                    )
                 }
             }
 
@@ -186,10 +204,12 @@ fun SurahCardOnlyText(
                 val tajweedText = editions.find { it.edition.identifier == "quran-tajweed" }?.text ?: ""
                 val translation = editions.find { it.edition.identifier == "id.indonesian" }?.text ?: ""
                 val transliteration = editions.find { it.edition.identifier == "en.transliteration" }?.text ?: ""
+                val ayahNumber = editions.first().numberInSurah
 
                 Text(
                     text = buildAnnotatedString { append(parseTajweedText(tajweedText)) },
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp)
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
+                    color = if (currentPlayingAyah == ayahNumber) Color.Yellow else Color.Unspecified
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = "Latin: $transliteration", style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray))
@@ -197,5 +217,44 @@ fun SurahCardOnlyText(
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
+}
+
+suspend fun playAllAudio(
+    ayahs: List<AyahEdition>,
+    selectedQari: String?,
+    mediaPlayer: MediaPlayer,
+    onAyahPlaying: (Int) -> Unit,
+    onFinished: () -> Unit
+) {
+    try {
+        for (ayah in ayahs) {
+            // Asumsi bahwa AyahEdition memiliki field audio yang berisi URL untuk qari tertentu
+            val audioEdition = ayah.edition.identifier.contains(selectedQari ?: "")
+            val audioUrl = ayah.audio.takeIf { audioEdition } // Ganti dengan field audio yang benar dari model Anda
+
+            if (!audioUrl.isNullOrEmpty()) {
+                try {
+                    mediaPlayer.reset()
+                    mediaPlayer.setDataSource(audioUrl) // Gunakan URL audio yang sesuai
+                    mediaPlayer.prepare()
+                    onAyahPlaying(ayah.numberInSurah)
+                    mediaPlayer.start()
+
+                    // Tunggu sampai audio selesai
+                    while (mediaPlayer.isPlaying) {
+                        delay(100)
+                    }
+                } catch (e: Exception) {
+                    Log.e("AudioPlayer", "Error playing ayah ${ayah.numberInSurah}: ${e.message}")
+                    continue // Lanjut ke ayah berikutnya jika ada error
+                }
+            }
+        }
+    } catch (e: Exception) {
+        Log.e("AudioPlayer", "Error in playAllAudio: ${e.message}")
+    } finally {
+        mediaPlayer.reset()
+        onFinished()
     }
 }

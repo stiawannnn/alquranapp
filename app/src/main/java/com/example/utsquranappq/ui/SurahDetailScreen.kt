@@ -42,8 +42,6 @@ fun SurahDetailScreen(
     viewModel: SurahDetailViewModel = viewModel(),
     surahViewModel: com.example.quranapp.viewmodel.SurahViewModel = viewModel()
 ) {
-    Log.d("SurahDetailScreen", "Screen loaded with surahNumber: $surahNumber")
-
     if (surahNumber == null || surahNumber <= 0) {
         Log.e("SurahDetailScreen", "Invalid surahNumber, displaying empty UI")
         Box(modifier = Modifier.fillMaxSize()) { /* UI kosong */ }
@@ -63,29 +61,38 @@ fun SurahDetailScreen(
     val listState = rememberLazyListState()
     var targetAyahNumber by remember { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var currentPlayingAyah by remember { mutableStateOf<Int?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
-    // State untuk mengontrol Play All
     var isPlayingAll by remember { mutableStateOf(false) }
     var isPaused by remember { mutableStateOf(false) }
     val mediaPlayer = remember { MediaPlayer() }
 
-    // Fungsi untuk memulai Play All
     fun startPlayAll(ayahs: List<AyahEdition>, currentAyahNumber: Int) {
         if (!isPlayingAll) {
             coroutineScope.launch {
                 isPlayingAll = true
                 isPaused = false
-                playAllAudio(ayahs, selectedQari, surahDetail, currentAyahNumber, mediaPlayer, { isPlayingAll }, { isPaused }) {
-                    isPlayingAll = false
-                    isPaused = false
-                }
+                playAllAudio(
+                    ayahs = ayahs,
+                    selectedQari = selectedQari,
+                    allAyahs = surahDetail,
+                    currentAyahNumber = currentAyahNumber,
+                    mediaPlayer = mediaPlayer,
+                    getIsPlayingAll = { isPlayingAll },
+                    getIsPaused = { isPaused },
+                    onAyahPlaying = { ayahNumber -> currentPlayingAyah = ayahNumber },
+                    onFinished = {
+                        isPlayingAll = false
+                        isPaused = false
+                        currentPlayingAyah = null
+                    }
+                )
             }
         }
     }
 
     LaunchedEffect(surahNumber) {
-        Log.d("SurahDetailScreen", "Fetching data for surahNumber: $surahNumber")
         viewModel.fetchSurahDetail(surahNumber)
     }
 
@@ -95,9 +102,7 @@ fun SurahDetailScreen(
             val index = ayahKeys.indexOf(ayahNumber)
             if (index != -1) {
                 listState.scrollToItem(index + 1)
-                Log.d("SurahDetailScreen", "Scrolled to ayah: $ayahNumber at index: ${index + 1}")
             } else {
-                Log.w("SurahDetailScreen", "Ayah number $ayahNumber not found")
                 snackbarHostState.showSnackbar("Ayat nomor $ayahNumber tidak ditemukan")
             }
         }
@@ -109,18 +114,12 @@ fun SurahDetailScreen(
                 title = { Text("Surah ${currentSurah?.name ?: ""}") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.arrowback),
-                            contentDescription = "Kembali"
-                        )
+                        Icon(painter = painterResource(id = R.drawable.arrowback), contentDescription = "Kembali")
                     }
                 },
                 actions = {
                     IconButton(onClick = { menuExpanded = true }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.qur6),
-                            contentDescription = "Menu"
-                        )
+                        Icon(painter = painterResource(id = R.drawable.qur6), contentDescription = "Menu")
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
@@ -149,20 +148,12 @@ fun SurahDetailScreen(
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when {
                 isLoading -> {
-                    Log.d("SurahDetailScreen", "Loading data...")
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
                 errorMessage != null -> {
-                    Log.e("SurahDetailScreen", "Error encountered: $errorMessage")
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             text = errorMessage ?: "Terjadi kesalahan",
                             color = MaterialTheme.colorScheme.error,
@@ -171,19 +162,12 @@ fun SurahDetailScreen(
                     }
                 }
                 surahDetail.isEmpty() -> {
-                    Log.w("SurahDetailScreen", "No ayahs found for this Surah")
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Tidak ada data ayat", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 else -> {
-                    Log.d("SurahDetailScreen", "Displaying ayahs")
-                    LazyColumn(
-                        state = listState
-                    ) {
+                    LazyColumn(state = listState) {
                         item {
                             detailldariayat(currentSurah = currentSurah)
                         }
@@ -193,6 +177,7 @@ fun SurahDetailScreen(
                                 ayahs = ayahs,
                                 selectedQari = selectedQari,
                                 allAyahs = surahDetail,
+                                currentPlayingAyah = currentPlayingAyah,
                                 isPlayingAll = isPlayingAll,
                                 isPaused = isPaused,
                                 onPlayAll = { startPlayAll(ayahs, numberInSurah) },
@@ -210,7 +195,9 @@ fun SurahDetailScreen(
                                     mediaPlayer.reset()
                                     isPlayingAll = false
                                     isPaused = false
-                                }
+                                    currentPlayingAyah = null
+                                },
+                                onAyahPlaying = { ayahNumber -> currentPlayingAyah = ayahNumber } // Tambahkan callback
                             )
                         }
                     }
@@ -244,9 +231,9 @@ fun SurahDetailScreen(
         }
     }
 }
-// Fungsi detailldariayat tetap sama seperti sebelumnya
+
 @Composable
-fun detailldariayat(currentSurah: Surah?,viewModel: SurahDetailViewModel = viewModel()) {
+fun detailldariayat(currentSurah: Surah?, viewModel: SurahDetailViewModel = viewModel()) {
     val surahDetail by viewModel.surahDetail.collectAsState()
     val juzNumber = surahDetail.firstOrNull()?.juz
     val (namaSurah, artiSurah, jenisWahyu) = getTranslation(
@@ -282,8 +269,6 @@ fun detailldariayat(currentSurah: Surah?,viewModel: SurahDetailViewModel = viewM
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-
-
             currentSurah?.let {
                 Text(
                     text = "Juz : $juzNumber",
@@ -306,33 +291,29 @@ fun detailldariayat(currentSurah: Surah?,viewModel: SurahDetailViewModel = viewM
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp
                 )
-
-
             }
-
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Image(
                 painter = painterResource(id = R.drawable.bismillah),
                 contentDescription = "Bismillah",
                 modifier = Modifier.size(223.dp)
             )
-
-
         }
     }
 }
+
 @Composable
 fun AyahCard(
     ayahs: List<AyahEdition>,
     selectedQari: String?,
     allAyahs: List<AyahEdition>,
+    currentPlayingAyah: Int?,
     isPlayingAll: Boolean,
     isPaused: Boolean,
     onPlayAll: () -> Unit,
     onPauseResume: () -> Unit,
-    onStopAll: () -> Unit
+    onStopAll: () -> Unit,
+    onAyahPlaying: (Int) -> Unit // Tambahkan callback untuk play individu
 ) {
     Card(
         modifier = Modifier
@@ -348,13 +329,12 @@ fun AyahCard(
             ayahs.forEach { ayah ->
                 when (ayah.edition.identifier) {
                     "quran-tajweed" -> {
-                        Log.d("AyahText", "Raw text: ${ayah.text}")
                         val annotatedText = parseTajweedText("${ayah.numberInSurah}. ${ayah.text} ")
                         Text(
                             text = annotatedText,
                             style = MaterialTheme.typography.bodyLarge,
                             fontSize = 27.sp,
-                            color = Color.White
+                            color = if (currentPlayingAyah == ayah.numberInSurah) Color.Yellow else Color.White
                         )
                     }
                     "en.transliteration" -> {
@@ -378,7 +358,9 @@ fun AyahCard(
                                     qariName = ayah.edition.englishName,
                                     allAyahs = allAyahs,
                                     currentAyahNumber = ayah.numberInSurah,
-                                    selectedQari = selectedQari
+                                    selectedQari = selectedQari,
+                                    onAyahPlaying = onAyahPlaying,
+                                    isPlayingAll = isPlayingAll
                                 )
                             } else if (ayah.edition.identifier == selectedQari) {
                                 AudioPlayer(
@@ -387,7 +369,9 @@ fun AyahCard(
                                     qariName = ayah.edition.englishName,
                                     allAyahs = allAyahs,
                                     currentAyahNumber = ayah.numberInSurah,
-                                    selectedQari = selectedQari
+                                    selectedQari = selectedQari,
+                                    onAyahPlaying = onAyahPlaying,
+                                    isPlayingAll = isPlayingAll
                                 )
                             }
                         }
@@ -403,8 +387,8 @@ fun AyahCard(
                     onClick = if (isPlayingAll) onPauseResume else onPlayAll,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = when {
-                            isPlayingAll && !isPaused -> Color.Yellow // Pause
-                            else -> Color.Blue // Play/Resume
+                            isPlayingAll && !isPaused -> Color.Yellow
+                            else -> Color.Blue
                         }
                     )
                 ) {
@@ -428,6 +412,7 @@ fun AyahCard(
         }
     }
 }
+
 @Composable
 fun AudioPlayer(
     audioUrl: String,
@@ -435,7 +420,9 @@ fun AudioPlayer(
     qariName: String,
     allAyahs: List<AyahEdition>,
     currentAyahNumber: Int,
-    selectedQari: String? // Tambahkan selectedQari sebagai parameter
+    selectedQari: String?,
+    onAyahPlaying: (Int) -> Unit, // Tambahkan callback
+    isPlayingAll: Boolean // Tambahkan untuk koordinasi dengan Play All
 ) {
     val mediaPlayer = remember { MediaPlayer() }
     var isPlaying by remember { mutableStateOf(false) }
@@ -452,6 +439,7 @@ fun AudioPlayer(
             mediaPlayer.setOnCompletionListener {
                 isPlaying = false
                 mediaPlayer.seekTo(0)
+                onAyahPlaying(0) // Reset highlight saat selesai
             }
         } catch (e: Exception) {
             Log.e("AudioPlayer", "Error preparing audio: ${e.message}")
@@ -478,17 +466,19 @@ fun AudioPlayer(
         Spacer(modifier = Modifier.width(8.dp))
         Button(
             onClick = {
-                if (isPrepared) {
+                if (isPrepared && !isPlayingAll) { // Hanya jalankan jika tidak dalam mode Play All
                     if (isPlaying) {
                         mediaPlayer.pause()
                         isPlaying = false
+                        onAyahPlaying(0) // Reset highlight saat pause
                     } else {
                         mediaPlayer.start()
                         isPlaying = true
+                        onAyahPlaying(ayahNumber) // Set highlight saat play
                     }
                 }
             },
-            enabled = isPrepared,
+            enabled = isPrepared && !isPlayingAll, // Disable saat Play All aktif
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isPlaying) Color.Red else Color.Green
             )
@@ -500,12 +490,12 @@ fun AudioPlayer(
         }
     }
 }
-// Dialog untuk memilih suara
+
 @Composable
 fun VoiceSelectionDialog(
     onDismiss: () -> Unit,
     surahDetail: List<AyahEdition>,
-    onQariSelected: (String?) -> Unit // Callback untuk qari yang dipilih
+    onQariSelected: (String?) -> Unit
 ) {
     val qariList = surahDetail.filter { it.edition.language == "ar" && it.audio != null }
         .map { it.edition }.distinctBy { it.identifier }
@@ -515,14 +505,13 @@ fun VoiceSelectionDialog(
         title = { Text("Pilih Suara Qari") },
         text = {
             LazyColumn {
-                // Tambahkan opsi "Semua Qari"
                 item {
                     Text(
                         text = "Semua Qari",
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                onQariSelected(null) // Null untuk menampilkan semua qari
+                                onQariSelected(null)
                                 onDismiss()
                             }
                             .padding(8.dp)
@@ -534,7 +523,7 @@ fun VoiceSelectionDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                onQariSelected(qari.identifier) // Kirim identifier qari
+                                onQariSelected(qari.identifier)
                                 onDismiss()
                             }
                             .padding(8.dp)
@@ -549,7 +538,7 @@ fun VoiceSelectionDialog(
         }
     )
 }
-// Dialog untuk mencari nomor ayat
+
 @Composable
 fun SearchAyahDialog(
     onDismiss: () -> Unit,
@@ -583,6 +572,7 @@ fun SearchAyahDialog(
         }
     )
 }
+
 suspend fun playAllAudio(
     ayahs: List<AyahEdition>,
     selectedQari: String?,
@@ -591,6 +581,7 @@ suspend fun playAllAudio(
     mediaPlayer: MediaPlayer,
     getIsPlayingAll: () -> Boolean,
     getIsPaused: () -> Boolean,
+    onAyahPlaying: (Int) -> Unit,
     onFinished: () -> Unit
 ) {
     try {
@@ -606,19 +597,20 @@ suspend fun playAllAudio(
                 mediaPlayer.reset()
                 mediaPlayer.setDataSource(ayah.audio!!)
                 mediaPlayer.prepare()
+                onAyahPlaying(ayah.numberInSurah)
                 mediaPlayer.start()
                 Log.d("PlayAllAudio", "Playing audio for ayah $ayahNumber (${ayah.edition.englishName})")
 
-                var pausedPosition = 0 // Simpan posisi saat dijeda
+                var pausedPosition = 0
                 while (mediaPlayer.isPlaying || getIsPaused()) {
                     if (getIsPaused()) {
-                        pausedPosition = mediaPlayer.currentPosition // Simpan posisi saat pause
+                        pausedPosition = mediaPlayer.currentPosition
                         mediaPlayer.pause()
                         while (getIsPaused() && getIsPlayingAll()) {
-                            delay(100) // Tunggu sampai resume atau stop
+                            delay(100)
                         }
                         if (!getIsPlayingAll()) break
-                        mediaPlayer.seekTo(pausedPosition) // Lanjutkan dari posisi terakhir
+                        mediaPlayer.seekTo(pausedPosition)
                         mediaPlayer.start()
                     }
                     delay(100)
@@ -633,4 +625,4 @@ suspend fun playAllAudio(
         }
         onFinished()
     }
-}//audio
+}
