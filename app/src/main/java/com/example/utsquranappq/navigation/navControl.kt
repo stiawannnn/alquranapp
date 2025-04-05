@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.utsquranappq.ui.BottomNavigationBar
 import com.example.utsquranappq.ui.DoaScreen
 import com.example.utsquranappq.ui.HomeScreen
+import com.example.utsquranappq.ui.QiblaCompassScreen
 import com.example.utsquranappq.ui.SurahDetailScreen
 import com.example.utsquranappq.ui.SurahTab
 
@@ -32,6 +33,7 @@ class HomeScreenActivity : ComponentActivity() {
                 ) {
                     composable("home") { HomeScreen(navController) }
                     composable("quran") { DoaScreen() }
+                    composable("Qiblat") { QiblaCompassScreen() }
                     composable("surahTab") { SurahTab(navController) }
                     composable("surahDetail/{surahNumber}") { backStackEntry ->
                         val surahNumber = backStackEntry.arguments?.getString("surahNumber")?.toIntOrNull()
