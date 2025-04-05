@@ -1,15 +1,34 @@
 package com.example.utsquranappq.ui
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import android.icu.text.SimpleDateFormat
 import android.icu.util.TimeZone
 import java.util.Locale
+import androidx.compose.material3.TextFieldDefaults
 import java.util.Date
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,20 +42,56 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
+import com.example.utsquranappq.model.juzListStatic
 import kotlinx.coroutines.delay
 
 
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    surahViewModel: SurahViewModel = viewModel()
+) {
+    var searchQuery by remember { mutableStateOf("") }
+
+    val surahList by surahViewModel.surahList.collectAsState()
+    val juzList = juzListStatic
+
+    val matchedResults = remember(searchQuery, surahList, juzList) {
+        val surahMatches = surahList.filter {
+            it.name.contains(searchQuery, ignoreCase = true) ||
+                    it.englishName.contains(searchQuery, ignoreCase = true)
+        }.map {
+            "${it.number}. ${it.englishName}" to "surahDetail/${it.number}"
+        }
+
+        val juzMatches = juzList.filter {
+            "Juz ${it.number}".contains(searchQuery, ignoreCase = true)
+        }.map {
+            "Juz ${it.number}" to "juz_detail/${it.number}"
+        }
+
+        surahMatches + juzMatches
+    }
+
     Scaffold(
-        topBar = { TopBar() }, // Pass navController
+        topBar = {
+            TopBar(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                onSearchResultClick = { route ->
+                    navController.navigate(route)
+                    searchQuery = "" // reset setelah klik
+                },
+                showResults = searchQuery.isNotEmpty() && matchedResults.isNotEmpty(),
+                matchedResults = matchedResults
+            )
+        }
     ) { padding ->
-        // Membuat brush dengan gradien 3 warna
         val gradientBrush = Brush.linearGradient(
             colors = listOf(Color(0xFF0C0C1F), Color(0xFF050B2C), Color(0xFF06062D)),
             start = Offset(0f, 0f),
@@ -46,7 +101,7 @@ fun HomeScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientBrush)  // Menggunakan gradien sebagai background
+                .background(gradientBrush)
                 .padding(padding)
         ) {
             GreetingSection()
@@ -55,24 +110,88 @@ fun HomeScreen(navController: NavController) {
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar() {
-    TopAppBar(
-        title = { Text("Al- Qur'an", fontSize = 20.sp, fontWeight = FontWeight.Bold,color = Color.White) },
-        navigationIcon = {
-            IconButton(onClick = { /* Handle Menu Click */ }) {
-                Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
+fun TopBar(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchResultClick: (String) -> Unit,
+    showResults: Boolean,
+    matchedResults: List<Pair<String, String>>
+) {
+    var isSearching by remember { mutableStateOf(false) }
+
+    Column {
+        TopAppBar(
+            title = {
+                if (isSearching) {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = onSearchQueryChange,
+                        placeholder = { Text("Cari Surah atau Juz", color = Color.Gray) },
+                        singleLine = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            cursorColor = Color.White,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Text(
+                        "Al-Qur'an",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            },
+            navigationIcon = {
+                IconButton(onClick = { /* Handle menu */ }) {
+                    Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
+                }
+            },
+            actions = {
+                IconButton(onClick = { isSearching = !isSearching }) {
+                    Icon(Icons.Filled.Search, contentDescription = "Search", tint = Color.White)
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F0E2A))
+        )
+
+        if (isSearching && showResults) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1E1E1E))
+            ) {
+                items(matchedResults) { pair ->
+                    val label = pair.first
+                    val route = pair.second
+
+                    Text(
+                        text = label,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onSearchResultClick(route)
+                            }
+                            .padding(16.dp),
+                        color = Color.White
+                    )
+                }
             }
-        },
-        actions = {
-            IconButton(onClick = { /* Handle Search Click */ }) {
-                Icon(Icons.Filled.Search, contentDescription = "Search", tint = Color.White)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F0E2A))
-    )
+        }
+    }
 }
+
+
+
 
 @Composable
 fun GreetingSection() {
@@ -158,7 +277,7 @@ fun getCurrentTime(): String {
 @Composable
 fun TabSection(navController: NavController) {
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabTitles = listOf("Surah","Juz", "Bookmark")
+    val tabTitles = listOf("Surah","Juz", "BookMark")
 
     Column {
         TabRow(
@@ -184,15 +303,15 @@ fun TabSection(navController: NavController) {
         when (selectedTabIndex) {
             0 -> SurahTab(navController)
             1 -> JuzTab(navController)
-            3 -> HizbTab()
+            2 -> HizbTa()
         }
     }
 }
 
 @Composable
-fun HizbTab() {
+fun HizbTa() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("juzz", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        Text("Cooming Soon", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }
 
