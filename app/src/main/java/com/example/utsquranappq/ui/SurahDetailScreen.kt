@@ -246,7 +246,9 @@ fun SurahDetailScreen(
 }
 // Fungsi detailldariayat tetap sama seperti sebelumnya
 @Composable
-fun detailldariayat(currentSurah: Surah?) {
+fun detailldariayat(currentSurah: Surah?,viewModel: SurahDetailViewModel = viewModel()) {
+    val surahDetail by viewModel.surahDetail.collectAsState()
+    val juzNumber = surahDetail.firstOrNull()?.juz
     val (namaSurah, artiSurah, jenisWahyu) = getTranslation(
         currentSurah?.englishName ?: "",
         currentSurah?.englishNameTranslation ?: "",
@@ -281,7 +283,14 @@ fun detailldariayat(currentSurah: Surah?) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
+
             currentSurah?.let {
+                Text(
+                    text = "Juz : $juzNumber",
+                    color = Color.White,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Text(
                     text = namaSurah,
                     color = Color.White,
@@ -297,7 +306,10 @@ fun detailldariayat(currentSurah: Surah?) {
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp
                 )
+
+
             }
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -306,6 +318,8 @@ fun detailldariayat(currentSurah: Surah?) {
                 contentDescription = "Bismillah",
                 modifier = Modifier.size(223.dp)
             )
+
+
         }
     }
 }
@@ -335,7 +349,7 @@ fun AyahCard(
                 when (ayah.edition.identifier) {
                     "quran-tajweed" -> {
                         Log.d("AyahText", "Raw text: ${ayah.text}")
-                        val annotatedText = parseTajweedText("${ayah.numberInSurah}. ${ayah.text}")
+                        val annotatedText = parseTajweedText("${ayah.numberInSurah}. ${ayah.text} ")
                         Text(
                             text = annotatedText,
                             style = MaterialTheme.typography.bodyLarge,
@@ -619,4 +633,4 @@ suspend fun playAllAudio(
         }
         onFinished()
     }
-}//done
+}//audio

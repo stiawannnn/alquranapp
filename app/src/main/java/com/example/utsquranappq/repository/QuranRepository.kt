@@ -1,6 +1,8 @@
 package com.example.utsquranappq.repository
 
+import android.util.Log
 import com.example.utsquranappq.model.AyahEditionResponse
+import com.example.utsquranappq.model.JuzResponse
 import com.example.utsquranappq.model.SurahDetailResponse
 import com.example.utsquranappq.model.SurahResponse
 import com.example.utsquranappq.network.RetrofitInstance
@@ -11,6 +13,7 @@ class QuranRepository {
     suspend fun getSurahList(): SurahResponse {
         return api.getSurahList()
     }
+
     // Mengambil detail surah berdasarkan nomor surah
     suspend fun getSurah(surahNumber: Int): SurahDetailResponse {
         val response = api.getSurah(surahNumber)
@@ -31,6 +34,15 @@ class QuranRepository {
             }
         }
 
-
+    suspend fun getJuz(juzNumber: Int): JuzResponse {
+        return try {
+            val response = api.getJuz(juzNumber)
+            Log.d("QuranRepository", "Juz $juzNumber fetched: ${response.data.ayahs.size} ayahs")
+            response
+        } catch (e: Exception) {
+            Log.e("QuranRepository", "Error fetching juz $juzNumber: ${e.message}", e)
+            throw e
+        }
+    }
 }
 

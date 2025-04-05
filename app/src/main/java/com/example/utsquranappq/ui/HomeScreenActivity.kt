@@ -158,7 +158,7 @@ fun getCurrentTime(): String {
 @Composable
 fun TabSection(navController: NavController) {
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabTitles = listOf("Surah", "Page", "Juz", "Hizb", "Ruku")
+    val tabTitles = listOf("Surah","Juz", "Bookmark")
 
     Column {
         TabRow(
@@ -183,40 +183,20 @@ fun TabSection(navController: NavController) {
         }
         when (selectedTabIndex) {
             0 -> SurahTab(navController)
-            1 -> HalamanTab()
-            2 -> JuzTab()
+            1 -> JuzTab(navController)
             3 -> HizbTab()
-            4 -> RukuTab()
         }
     }
 }
 
-
-
-@Composable
-fun HalamanTab() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("page", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-    }
-}
-@Composable
-fun JuzTab() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("juzz", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-    }
-}
 @Composable
 fun HizbTab() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text("juzz", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
     }
 }
-@Composable
-fun RukuTab() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("juzz", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-    }
-}
+
+
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {

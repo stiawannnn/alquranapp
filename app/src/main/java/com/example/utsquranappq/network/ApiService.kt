@@ -1,6 +1,7 @@
 package com.example.utsquranappq.network
 
 import com.example.utsquranappq.model.AyahEditionResponse
+import com.example.utsquranappq.model.JuzResponse
 import com.example.utsquranappq.model.SurahDetailResponse
 import com.example.utsquranappq.model.SurahResponse
 import retrofit2.Response
@@ -22,6 +23,9 @@ interface ApiService {
         @Path("editions") editions: String
     ): Response<AyahEditionResponse>
 
+
+    @GET("juz/{juzNumber}/quran-tajweed")
+    suspend fun getJuz(@Path("juzNumber") juzNumber: Int): JuzResponse
 }
 
 

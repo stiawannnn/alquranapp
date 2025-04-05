@@ -10,26 +10,22 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.utsquranappq.ui.BottomNavigationBar
-import com.example.utsquranappq.ui.DoaScreen
-import com.example.utsquranappq.ui.HomeScreen
-import com.example.utsquranappq.ui.QiblaCompassScreen
-import com.example.utsquranappq.ui.SurahDetailScreen
-import com.example.utsquranappq.ui.SurahTab
+import com.example.utsquranappq.ui.JuzDetailScreen
+import com.example.utsquranappq.ui.*
 
 class HomeScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val navController = rememberNavController() // Buat NavController
+            val navController = rememberNavController()
 
             Scaffold(
-                bottomBar = { BottomNavigationBar(navController) } // BottomNavigationBar selalu tampil
+                bottomBar = { BottomNavigationBar(navController) }
             ) { paddingValues ->
                 NavHost(
                     navController = navController,
                     startDestination = "home",
-                    modifier = Modifier.padding(paddingValues) // Hindari overlap dengan bottom bar
+                    modifier = Modifier.padding(paddingValues)
                 ) {
                     composable("home") { HomeScreen(navController) }
                     composable("quran") { DoaScreen() }
@@ -40,9 +36,15 @@ class HomeScreenActivity : ComponentActivity() {
                         Log.d("Navigation", "Navigating to SurahDetailScreen with number: $surahNumber")
                         SurahDetailScreen(surahNumber, navController)
                     }
+                    composable("juz_list") {
+                        JuzTab(navController = navController)
+                    }
+                    composable("juz_detail/{juzNumber}") { backStackEntry ->
+                        val juzNumber = backStackEntry.arguments?.getString("juzNumber")?.toIntOrNull()
+                        JuzDetailScreen(juzNumber = juzNumber, navController = navController)
+                    }
                 }
             }
         }
     }
 }
-

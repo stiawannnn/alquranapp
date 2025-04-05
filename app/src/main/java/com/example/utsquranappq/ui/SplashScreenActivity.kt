@@ -47,8 +47,9 @@ fun SplashScreen() {
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF0F239D), // Biru Tua
-                        Color(0xFF7748C7)  // Biru Muda
+                        Color(0xFF2A41BE), // Biru muda
+                        Color(0xFF2AB8D0), // Kuning muda
+                        Color(0xFF9B3CBD) // Biru Muda
                     )
                 )
             )
