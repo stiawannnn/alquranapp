@@ -32,6 +32,8 @@ import com.example.utsquranappq.model.Surah
 import com.example.utsquranappq.utiils.getTranslation
 import com.example.utsquranappq.utiils.parseTajweedText
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SurahDetailScreen(
@@ -51,34 +53,52 @@ fun SurahDetailScreen(
     val surahDetail by viewModel.surahDetail.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.error.collectAsState()
-    val surahList by surahViewModel.surahList.collectAsState()
     val selectedQari by viewModel.selectedQari.collectAsState()
+    val surahList by surahViewModel.surahList.collectAsState()
     val currentSurah = surahList.find { it.number == surahNumber }
 
-    // State untuk menu dan scroll
     var menuExpanded by remember { mutableStateOf(false) }
     var showVoiceDialog by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     var targetAyahNumber by remember { mutableStateOf<Int?>(null) }
-    val snackbarHostState = remember { SnackbarHostState() } // Tambahkan SnackbarHostState
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // State untuk mengontrol Play All
+    var isPlayingAll by remember { mutableStateOf(false) }
+    var isPaused by remember { mutableStateOf(false) }
+    val mediaPlayer = remember { MediaPlayer() }
+
+    // Fungsi untuk memulai Play All
+    fun startPlayAll(ayahs: List<AyahEdition>, currentAyahNumber: Int) {
+        if (!isPlayingAll) {
+            coroutineScope.launch {
+                isPlayingAll = true
+                isPaused = false
+                playAllAudio(ayahs, selectedQari, surahDetail, currentAyahNumber, mediaPlayer, { isPlayingAll }, { isPaused }) {
+                    isPlayingAll = false
+                    isPaused = false
+                }
+            }
+        }
+    }
 
     LaunchedEffect(surahNumber) {
         Log.d("SurahDetailScreen", "Fetching data for surahNumber: $surahNumber")
         viewModel.fetchSurahDetail(surahNumber)
     }
 
-    // Efek untuk scroll ke ayat yang dicari
     LaunchedEffect(targetAyahNumber) {
         targetAyahNumber?.let { ayahNumber ->
             val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
             val index = ayahKeys.indexOf(ayahNumber)
             if (index != -1) {
-                listState.scrollToItem(index + 1) // +1 karena ada header
+                listState.scrollToItem(index + 1)
                 Log.d("SurahDetailScreen", "Scrolled to ayah: $ayahNumber at index: ${index + 1}")
             } else {
                 Log.w("SurahDetailScreen", "Ayah number $ayahNumber not found")
-                snackbarHostState.showSnackbar("Ayat nomor $ayahNumber tidak ditemukan")//bisatambahdurasi
+                snackbarHostState.showSnackbar("Ayat nomor $ayahNumber tidak ditemukan")
             }
         }
     }
@@ -90,7 +110,7 @@ fun SurahDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            painter = painterResource(id = R.drawable.arrowback), // Ganti dengan ikon Anda
+                            painter = painterResource(id = R.drawable.arrowback),
                             contentDescription = "Kembali"
                         )
                     }
@@ -98,7 +118,7 @@ fun SurahDetailScreen(
                 actions = {
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(
-                            painter = painterResource(id = R.drawable.qur6), // Ganti dengan ikon Anda
+                            painter = painterResource(id = R.drawable.qur6),
                             contentDescription = "Menu"
                         )
                     }
@@ -124,7 +144,7 @@ fun SurahDetailScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) } // Tambahkan SnackbarHost ke Scaffold
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when {
@@ -169,32 +189,58 @@ fun SurahDetailScreen(
                         }
                         items(surahDetail.groupBy { it.numberInSurah }.keys.toList()) { numberInSurah ->
                             val ayahs = surahDetail.filter { it.numberInSurah == numberInSurah }
-                            AyahCard(ayahs, selectedQari)
+                            AyahCard(
+                                ayahs = ayahs,
+                                selectedQari = selectedQari,
+                                allAyahs = surahDetail,
+                                isPlayingAll = isPlayingAll,
+                                isPaused = isPaused,
+                                onPlayAll = { startPlayAll(ayahs, numberInSurah) },
+                                onPauseResume = {
+                                    if (isPlayingAll && !isPaused) {
+                                        mediaPlayer.pause()
+                                        isPaused = true
+                                    } else if (isPlayingAll && isPaused) {
+                                        mediaPlayer.start()
+                                        isPaused = false
+                                    }
+                                },
+                                onStopAll = {
+                                    mediaPlayer.stop()
+                                    mediaPlayer.reset()
+                                    isPlayingAll = false
+                                    isPaused = false
+                                }
+                            )
                         }
                     }
                 }
             }
         }
 
-        // Dialog Pilih Suara
         if (showVoiceDialog) {
             VoiceSelectionDialog(
                 onDismiss = { showVoiceDialog = false },
                 surahDetail = surahDetail,
                 onQariSelected = { qariIdentifier ->
-                    viewModel.selectQari(qariIdentifier) // Panggil fungsi ViewModel
+                    viewModel.selectQari(qariIdentifier)
                 }
             )
         }
 
-        // Dialog Search Nomor Ayat
         if (showSearchDialog) {
             SearchAyahDialog(
                 onDismiss = { showSearchDialog = false },
                 onSearch = { ayahNumber ->
-                    targetAyahNumber = ayahNumber.toIntOrNull() // Set nomor ayat untuk trigger scroll
+                    targetAyahNumber = ayahNumber.toIntOrNull()
                 }
             )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaPlayer.release()
         }
     }
 }
@@ -264,7 +310,16 @@ fun detailldariayat(currentSurah: Surah?) {
     }
 }
 @Composable
-fun AyahCard(ayahs: List<AyahEdition>, selectedQari: String?) {
+fun AyahCard(
+    ayahs: List<AyahEdition>,
+    selectedQari: String?,
+    allAyahs: List<AyahEdition>,
+    isPlayingAll: Boolean,
+    isPaused: Boolean,
+    onPlayAll: () -> Unit,
+    onPauseResume: () -> Unit,
+    onStopAll: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,20 +356,73 @@ fun AyahCard(ayahs: List<AyahEdition>, selectedQari: String?) {
                         )
                     }
                     else -> {
-                        // Filter audio berdasarkan qari yang dipilih
-                        if (ayah.audio != null && (selectedQari == null || ayah.edition.identifier == selectedQari)) {
-                            AudioPlayer(audioUrl = ayah.audio, ayahNumber = ayah.numberInSurah, qariName = ayah.edition.englishName)
+                        if (ayah.audio != null) {
+                            if (selectedQari == null) {
+                                AudioPlayer(
+                                    audioUrl = ayah.audio,
+                                    ayahNumber = ayah.numberInSurah,
+                                    qariName = ayah.edition.englishName,
+                                    allAyahs = allAyahs,
+                                    currentAyahNumber = ayah.numberInSurah,
+                                    selectedQari = selectedQari
+                                )
+                            } else if (ayah.edition.identifier == selectedQari) {
+                                AudioPlayer(
+                                    audioUrl = ayah.audio,
+                                    ayahNumber = ayah.numberInSurah,
+                                    qariName = ayah.edition.englishName,
+                                    allAyahs = allAyahs,
+                                    currentAyahNumber = ayah.numberInSurah,
+                                    selectedQari = selectedQari
+                                )
+                            }
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
+            Row(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = if (isPlayingAll) onPauseResume else onPlayAll,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = when {
+                            isPlayingAll && !isPaused -> Color.Yellow // Pause
+                            else -> Color.Blue // Play/Resume
+                        }
+                    )
+                ) {
+                    Text(
+                        text = when {
+                            isPlayingAll && !isPaused -> "Pause"
+                            isPlayingAll && isPaused -> "Resume"
+                            else -> "Play All"
+                        },
+                        color = Color.White
+                    )
+                }
+                Button(
+                    onClick = onStopAll,
+                    enabled = isPlayingAll,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Stop", color = Color.White)
+                }
+            }
         }
     }
 }
-
 @Composable
-fun AudioPlayer(audioUrl: String, ayahNumber: Int, qariName: String) {
+fun AudioPlayer(
+    audioUrl: String,
+    ayahNumber: Int,
+    qariName: String,
+    allAyahs: List<AyahEdition>,
+    currentAyahNumber: Int,
+    selectedQari: String? // Tambahkan selectedQari sebagai parameter
+) {
     val mediaPlayer = remember { MediaPlayer() }
     var isPlaying by remember { mutableStateOf(false) }
     var isPrepared by remember { mutableStateOf(false) }
@@ -368,7 +476,7 @@ fun AudioPlayer(audioUrl: String, ayahNumber: Int, qariName: String) {
             },
             enabled = isPrepared,
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isPlaying) Color.White else Color.Green
+                containerColor = if (isPlaying) Color.Red else Color.Green
             )
         ) {
             Text(
@@ -460,4 +568,55 @@ fun SearchAyahDialog(
             }
         }
     )
+}
+suspend fun playAllAudio(
+    ayahs: List<AyahEdition>,
+    selectedQari: String?,
+    allAyahs: List<AyahEdition>,
+    currentAyahNumber: Int,
+    mediaPlayer: MediaPlayer,
+    getIsPlayingAll: () -> Boolean,
+    getIsPaused: () -> Boolean,
+    onFinished: () -> Unit
+) {
+    try {
+        val ayahNumbers = allAyahs.groupBy { it.numberInSurah }.keys.filter { it >= currentAyahNumber }.sorted()
+        for (ayahNumber in ayahNumbers) {
+            if (!getIsPlayingAll()) break
+            val currentAyahs = allAyahs.filter { it.numberInSurah == ayahNumber }
+            val audioAyahs = currentAyahs.filter { ayah ->
+                ayah.audio != null && (selectedQari == null || ayah.edition.identifier == selectedQari)
+            }
+            for (ayah in audioAyahs) {
+                if (!getIsPlayingAll()) break
+                mediaPlayer.reset()
+                mediaPlayer.setDataSource(ayah.audio!!)
+                mediaPlayer.prepare()
+                mediaPlayer.start()
+                Log.d("PlayAllAudio", "Playing audio for ayah $ayahNumber (${ayah.edition.englishName})")
+
+                var pausedPosition = 0 // Simpan posisi saat dijeda
+                while (mediaPlayer.isPlaying || getIsPaused()) {
+                    if (getIsPaused()) {
+                        pausedPosition = mediaPlayer.currentPosition // Simpan posisi saat pause
+                        mediaPlayer.pause()
+                        while (getIsPaused() && getIsPlayingAll()) {
+                            delay(100) // Tunggu sampai resume atau stop
+                        }
+                        if (!getIsPlayingAll()) break
+                        mediaPlayer.seekTo(pausedPosition) // Lanjutkan dari posisi terakhir
+                        mediaPlayer.start()
+                    }
+                    delay(100)
+                }
+            }
+        }
+    } catch (e: Exception) {
+        Log.e("PlayAllAudio", "Error playing all audio: ${e.message}")
+    } finally {
+        if (!getIsPaused()) {
+            mediaPlayer.reset()
+        }
+        onFinished()
+    }
 }
