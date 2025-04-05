@@ -168,10 +168,10 @@ fun QiblaCompassScreen() {
 
             // Single rotating compass
             Image(
-                painter = painterResource(id = R.drawable.kompas),
+                painter = painterResource(id = R.drawable.kompas11),
                 contentDescription = "Kompas Kiblat",
                 modifier = Modifier
-                    .size(888.dp)
+                    .size(999.dp)
                     .rotate(qiblaAngle - rotation)
             )
 
