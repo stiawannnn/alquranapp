@@ -47,6 +47,7 @@ import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.juzListStatic
+import com.example.utsquranappq.utiils.getTranslation
 import kotlinx.coroutines.delay
 
 
@@ -66,7 +67,9 @@ fun HomeScreen(
             it.name.contains(searchQuery, ignoreCase = true) ||
                     it.englishName.contains(searchQuery, ignoreCase = true)
         }.map {
-            "${it.number}. ${it.englishName}" to "surahDetail/${it.number}"
+            val translated = getTranslation(it.englishName, "dummyMeaning", "dummyRevelation")
+            val surahNameIndo = translated.first // Nama surah dalam bahasa Indonesia
+            "${it.number}. $surahNameIndo" to "surahDetail/${it.number}"
         }
 
         val juzMatches = juzList.filter {
@@ -85,7 +88,7 @@ fun HomeScreen(
                 onSearchQueryChange = { searchQuery = it },
                 onSearchResultClick = { route ->
                     navController.navigate(route)
-                    searchQuery = "" // reset setelah klik
+                    searchQuery = "" // Reset setelah klik
                 },
                 showResults = searchQuery.isNotEmpty() && matchedResults.isNotEmpty(),
                 matchedResults = matchedResults
@@ -109,7 +112,6 @@ fun HomeScreen(
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,11 +173,11 @@ fun TopBar(
                     .background(Color(0xFF1E1E1E))
             ) {
                 items(matchedResults) { pair ->
-                    val label = pair.first
+                    val surahName = pair.first
                     val route = pair.second
 
                     Text(
-                        text = label,
+                        text = surahName,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {

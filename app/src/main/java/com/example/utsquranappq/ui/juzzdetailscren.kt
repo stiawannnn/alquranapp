@@ -117,6 +117,7 @@ fun JuzDetailScreen(
                                                 ayahs = ayahs,
                                                 selectedQari = selectedQari,
                                                 mediaPlayer = mediaPlayer,
+                                                isPlayingAll = { isPlayingAll }, // 👈 status live
                                                 onAyahPlaying = { ayahNumber -> currentPlayingAyah = ayahNumber },
                                                 onFinished = {
                                                     isPlayingAll = false
@@ -168,7 +169,7 @@ fun SurahCardOnlyText(
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF0F0218),
-            contentColor = Color(0xFFAA9AAB)
+            contentColor = Color(0xFFFFFFFF)
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -193,7 +194,7 @@ fun SurahCardOnlyText(
                 ) {
                     Text(
                         if (isPlayingAll) "Stop All" else "Play All",
-                        color = if (selectedQari != null) Color.Green else Color.Gray
+                        color = if (selectedQari != null) Color.Green else Color.White
                     )
                 }
             }
@@ -224,30 +225,37 @@ suspend fun playAllAudio(
     ayahs: List<AyahEdition>,
     selectedQari: String?,
     mediaPlayer: MediaPlayer,
+    isPlayingAll: () -> Boolean,
     onAyahPlaying: (Int) -> Unit,
     onFinished: () -> Unit
 ) {
     try {
         for (ayah in ayahs) {
-            // Asumsi bahwa AyahEdition memiliki field audio yang berisi URL untuk qari tertentu
+            if (!isPlayingAll()) break // 🔥 STOP jika user udah tekan "Stop All"
+
             val audioEdition = ayah.edition.identifier.contains(selectedQari ?: "")
-            val audioUrl = ayah.audio.takeIf { audioEdition } // Ganti dengan field audio yang benar dari model Anda
+            val audioUrl = ayah.audio.takeIf { audioEdition }
 
             if (!audioUrl.isNullOrEmpty()) {
                 try {
                     mediaPlayer.reset()
-                    mediaPlayer.setDataSource(audioUrl) // Gunakan URL audio yang sesuai
+                    mediaPlayer.setDataSource(audioUrl)
                     mediaPlayer.prepare()
                     onAyahPlaying(ayah.numberInSurah)
                     mediaPlayer.start()
 
-                    // Tunggu sampai audio selesai
                     while (mediaPlayer.isPlaying) {
+                        if (!isPlayingAll()) {
+                            mediaPlayer.stop()
+                            mediaPlayer.reset()
+                            break
+                        }
                         delay(100)
                     }
+
                 } catch (e: Exception) {
                     Log.e("AudioPlayer", "Error playing ayah ${ayah.numberInSurah}: ${e.message}")
-                    continue // Lanjut ke ayah berikutnya jika ada error
+                    continue
                 }
             }
         }

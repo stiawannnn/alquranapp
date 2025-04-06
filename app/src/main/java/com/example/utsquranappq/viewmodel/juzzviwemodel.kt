@@ -21,7 +21,7 @@ class JuzViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val editions = "quran-tajweed,en.transliteration,id.indonesian,ar.alafasy"
+    private val editions = "quran-tajweed,en.transliteration,id.indonesian,ar.alafasy,ar.abdurrahmaansudais,ar.husary,ar.minshawi,ar.ahmedajamy"
 
     fun fetchJuzDetail(juzNumber: Int) {
         viewModelScope.launch {
