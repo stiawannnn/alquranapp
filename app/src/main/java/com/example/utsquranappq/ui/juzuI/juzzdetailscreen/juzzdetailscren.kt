@@ -1,7 +1,7 @@
 package com.example.utsquranappq.ui.juzuI.juzzdetailscreen
 
-import android.media.MediaPlayer
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,9 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,11 +20,8 @@ import androidx.navigation.NavController
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.AyahEdition
 import com.example.utsquranappq.ui.surahui.surahdetailscreen.VoiceSelectionDialog
-import com.example.utsquranappq.utiils.parseTajweedText
 import com.example.utsquranappq.viewmodel.JuzViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,16 +41,15 @@ fun JuzDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     var showQariDialog by remember { mutableStateOf(false) }
-    var selectedQari by remember { mutableStateOf<String?>(null) }
-    val mediaPlayer = remember { MediaPlayer() }
-    var isPlayingAll by remember { mutableStateOf(false) }
+    var selectedQari by remember { mutableStateOf<String?>("ar.alafasy") }
+    val audioManager = remember { JuzAudioManager() }
     var currentPlayingAyah by remember { mutableStateOf<Int?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
     DisposableEffect(Unit) {
         onDispose {
-            mediaPlayer.release()
+            audioManager.release()
         }
     }
 
@@ -61,7 +57,6 @@ fun JuzDetailScreen(
         viewModel.fetchJuzDetail(juzNumber, reset = true)
     }
 
-    // Deteksi scroll untuk memuat lebih banyak ayat
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }
             .collect { visibleItems ->
@@ -79,14 +74,26 @@ fun JuzDetailScreen(
                 title = { Text("Juz $juzNumber") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(painter = painterResource(id = R.drawable.arrowback), contentDescription = "Kembali")
+                        Icon(
+                            painter = painterResource(id = R.drawable.arrowback),
+                            contentDescription = "Kembali"
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { showQariDialog = true }) {
-                        Icon(painter = painterResource(id = R.drawable.qur6), contentDescription = "Menu")
+                        Icon(
+                            painter = painterResource(id = R.drawable.qur6),
+                            contentDescription = "Menu"
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF100F0F),
+                    titleContentColor = Color(0xFFFDFAFA),
+                    navigationIconContentColor = Color(0xFF472694),
+                    actionIconContentColor = Color(0xFF03A9F4)
+                )
             )
         }
     ) { paddingValues ->
@@ -94,6 +101,15 @@ fun JuzDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF0E0E0E),
+                            Color(0xFF090808),
+                            Color(0xFF0E0E0E)
+                        )
+                    )
+                )
         ) {
             when {
                 isLoading && juzDetail.isEmpty() -> {
@@ -101,58 +117,53 @@ fun JuzDetailScreen(
                         CircularProgressIndicator()
                     }
                 }
+
                 error != null -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(error ?: "Unknown error", color = MaterialTheme.colorScheme.error)
                     }
                 }
+
                 juzDetail.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("No data available for Juz $juzNumber")
                     }
                 }
+
                 else -> {
                     val grouped = juzDetail.groupBy { it.surah.number }
 
                     LazyColumn(state = listState) {
                         items(grouped.entries.toList()) { (surahNumber, ayahs) ->
-                            val surahName = ayahs.firstOrNull()?.surah?.englishName ?: "Surah $surahNumber"
+                            val surahName =
+                                ayahs.firstOrNull()?.surah?.englishName ?: "Surah $surahNumber"
 
                             SurahCardOnlyText(
                                 surahName = surahName,
                                 ayahs = ayahs,
                                 selectedQari = selectedQari,
-                                mediaPlayer = mediaPlayer,
-                                isPlayingAll = isPlayingAll,
+                                audioManager = audioManager,
                                 currentPlayingAyah = currentPlayingAyah,
-                                onTogglePlayAll = {
-                                    if (!isPlayingAll && selectedQari != null) {
-                                        isPlayingAll = true
-                                        coroutineScope.launch {
-                                            playAllAudio(
-                                                ayahs = ayahs,
-                                                selectedQari = selectedQari,
-                                                mediaPlayer = mediaPlayer,
-                                                isPlayingAll = { isPlayingAll },
-                                                onAyahPlaying = { ayahNumber -> currentPlayingAyah = ayahNumber },
-                                                onFinished = {
-                                                    isPlayingAll = false
-                                                    currentPlayingAyah = null
-                                                }
-                                            )
-                                        }
-                                    } else {
-                                        isPlayingAll = false
-                                        mediaPlayer.stop()
-                                        mediaPlayer.reset()
-                                        currentPlayingAyah = null
+                                onPlayAll = { startIndex ->
+                                    coroutineScope.launch {
+                                        audioManager.playAll(
+                                            ayahs = ayahs,
+                                            selectedQari = selectedQari,
+                                            allAyahs = juzDetail,
+                                            startIndex = startIndex,
+                                            onAyahPlaying = { currentPlayingAyah = it },
+                                            onFinished = { currentPlayingAyah = null }
+                                        )
                                     }
                                 }
                             )
                         }
                         if (isLoading) {
                             item {
-                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     CircularProgressIndicator()
                                 }
                             }
@@ -172,120 +183,5 @@ fun JuzDetailScreen(
                 }
             )
         }
-    }
-}
-
-// Fungsi SurahCardOnlyText dan playAllAudio tetap sama
-@Composable
-fun SurahCardOnlyText(
-    surahName: String,
-    ayahs: List<AyahEdition>,
-    selectedQari: String?,
-    mediaPlayer: MediaPlayer,
-    isPlayingAll: Boolean,
-    currentPlayingAyah: Int?,
-    onTogglePlayAll: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF0F0218),
-            contentColor = Color(0xFFFFFFFF)
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Surah: $surahName",
-                    style = MaterialTheme.typography.titleMedium.copy(color = Color.White)
-                )
-                TextButton(
-                    onClick = {
-                        if (selectedQari == null) {
-                            // Anda mungkin ingin menambahkan toast atau dialog untuk memilih qari terlebih dahulu
-                        } else {
-                            onTogglePlayAll()
-                        }
-                    },
-                    enabled = selectedQari != null
-                ) {
-                    Text(
-                        if (isPlayingAll) "Stop All" else "Play All",
-                        color = if (selectedQari != null) Color.Green else Color.White
-                    )
-                }
-            }
-
-            val groupedByAyah = ayahs.groupBy { it.number }
-
-            groupedByAyah.forEach { (_, editions) ->
-                val tajweedText = editions.find { it.edition.identifier == "quran-tajweed" }?.text ?: ""
-                val translation = editions.find { it.edition.identifier == "id.indonesian" }?.text ?: ""
-                val transliteration = editions.find { it.edition.identifier == "en.transliteration" }?.text ?: ""
-                val ayahNumber = editions.first().numberInSurah
-
-                Text(
-                    text = buildAnnotatedString { append(parseTajweedText(tajweedText)) },
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 22.sp),
-                    color = if (currentPlayingAyah == ayahNumber) Color.Yellow else Color.Unspecified
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Latin: $transliteration", style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray))
-                Text(text = "Terjemahan: $translation", style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray))
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
-    }
-}
-
-suspend fun playAllAudio(
-    ayahs: List<AyahEdition>,
-    selectedQari: String?,
-    mediaPlayer: MediaPlayer,
-    isPlayingAll: () -> Boolean,
-    onAyahPlaying: (Int) -> Unit,
-    onFinished: () -> Unit
-) {
-    try {
-        for (ayah in ayahs) {
-            if (!isPlayingAll()) break
-
-            val audioEdition = ayah.edition.identifier.contains(selectedQari ?: "")
-            val audioUrl = ayah.audio.takeIf { audioEdition }
-
-            if (!audioUrl.isNullOrEmpty()) {
-                try {
-                    mediaPlayer.reset()
-                    mediaPlayer.setDataSource(audioUrl)
-                    mediaPlayer.prepare()
-                    onAyahPlaying(ayah.numberInSurah)
-                    mediaPlayer.start()
-
-                    while (mediaPlayer.isPlaying) {
-                        if (!isPlayingAll()) {
-                            mediaPlayer.stop()
-                            mediaPlayer.reset()
-                            break
-                        }
-                        delay(100)
-                    }
-                } catch (e: Exception) {
-                    Log.e("AudioPlayer", "Error playing ayah ${ayah.numberInSurah}: ${e.message}")
-                    continue
-                }
-            }
-        }
-    } catch (e: Exception) {
-        Log.e("AudioPlayer", "Error in playAllAudio: ${e.message}")
-    } finally {
-        mediaPlayer.reset()
-        onFinished()
     }
 }

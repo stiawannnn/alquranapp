@@ -20,7 +20,7 @@ class SurahDetailViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val _selectedQari = MutableStateFlow<String?>(null)
+    private val _selectedQari = MutableStateFlow<String?>("ar.ahmedajamy")
     val selectedQari: StateFlow<String?> = _selectedQari
 
     private var currentPage = 0
