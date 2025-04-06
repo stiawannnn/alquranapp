@@ -1,4 +1,5 @@
 package com.example.utsquranappq.viewmodel
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.utsquranappq.model.AyahEdition
@@ -6,7 +7,6 @@ import com.example.utsquranappq.repository.QuranRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import android.util.Log
 
 class SurahDetailViewModel : ViewModel() {
     private val repository = QuranRepository()
@@ -14,50 +14,63 @@ class SurahDetailViewModel : ViewModel() {
     private val _surahDetail = MutableStateFlow<List<AyahEdition>>(emptyList())
     val surahDetail: StateFlow<List<AyahEdition>> = _surahDetail
 
-    private val _isLoading = MutableStateFlow(true)
+    private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val _selectedQari = MutableStateFlow<String?>("ar.alafasy") // Null berarti semua qari ditampilkan
+    private val _selectedQari = MutableStateFlow<String?>(null)
     val selectedQari: StateFlow<String?> = _selectedQari
 
-    fun fetchSurahDetail(surahNumber: Int) {
+    private var currentPage = 0
+    private val pageSize = 7 // Memuat 10 ayat per halaman
+    private var totalAyahs = 0
+    private var surahNumberLoaded = -1
+
+    fun fetchSurahDetail(surahNumber: Int, reset: Boolean = false) {
+        if (reset || surahNumber != surahNumberLoaded) {
+            currentPage = 0
+            _surahDetail.value = emptyList()
+            surahNumberLoaded = surahNumber
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             try {
-                // Tambahkan ar.alafasy ke daftar edisi
                 val editions = "quran-tajweed,en.transliteration,id.indonesian,ar.alafasy,ar.abdurrahmaansudais,ar.husary,ar.minshawi,ar.ahmedajamy"
-                val ayahList = mutableListOf<AyahEdition>()
-                val surahResponse = repository.getSurah(surahNumber)
-                if (surahResponse.code == 200) {
-                    val ayahs = surahResponse.data.ayahs
-                    ayahs.forEach { ayah ->
+                val response = repository.getSurah(surahNumber)
+                if (response.code == 200) {
+                    val ayahs = response.data.ayahs
+                    totalAyahs = ayahs.size
+                    val startIndex = currentPage * pageSize
+                    val endIndex = minOf(startIndex + pageSize, totalAyahs)
+                    val ayahList = mutableListOf<AyahEdition>()
+
+                    ayahs.subList(startIndex, endIndex).forEach { ayah ->
                         val reference = "$surahNumber:${ayah.numberInSurah}"
-                        val response = repository.getAyahEditions(reference, editions)
-                        if (response.code == 200) {
-                            ayahList.addAll(response.data) // Semua edisi (termasuk audio) ditambahkan
+                        val editionResponse = repository.getAyahEditions(reference, editions)
+                        if (editionResponse.code == 200) {
+                            ayahList.addAll(editionResponse.data)
                         }
                     }
-                    _surahDetail.value = ayahList
-                    Log.d("SurahDetailViewModel", "Berhasil mengambil ${ayahList.size} edisi ayat")
+                    _surahDetail.value = _surahDetail.value + ayahList
+                    currentPage++
                 } else {
-                    _error.value = "Gagal memuat surah: ${surahResponse.status}"
+                    _error.value = "Failed to load Surah $surahNumber: ${response.status}"
                 }
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message}"
-                Log.e("SurahDetailViewModel", "Exception: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-// Fungsi untuk mengatur qari yang dipilih
-fun selectQari(qariIdentifier: String?) {
-    _selectedQari.value = qariIdentifier
-    Log.d("SurahDetailViewModel", "Selected qari: $qariIdentifier")
-}
+    fun selectQari(qari: String?) {
+        _selectedQari.value = qari
+    }
+
+    fun hasMoreAyahs() = (currentPage * pageSize) < totalAyahs
 }

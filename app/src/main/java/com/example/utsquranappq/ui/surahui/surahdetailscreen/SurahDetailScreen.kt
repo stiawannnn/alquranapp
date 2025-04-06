@@ -13,12 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.viewmodel.SurahDetailViewModel
 import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +54,7 @@ fun SurahDetailScreen(
     val audioManager = remember { AudioManager() }
 
     LaunchedEffect(surahNumber) {
-        viewModel.fetchSurahDetail(surahNumber)
+        viewModel.fetchSurahDetail(surahNumber, reset = true)
     }
 
     LaunchedEffect(targetAyahNumber) {
@@ -65,6 +67,18 @@ fun SurahDetailScreen(
                 snackbarHostState.showSnackbar("Ayat nomor $ayahNumber tidak ditemukan")
             }
         }
+    }
+
+    // Deteksi scroll untuk memuat lebih banyak ayat
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                val lastVisibleItem = visibleItems.lastOrNull()?.index ?: 0
+                val totalItems = surahDetail.groupBy { it.numberInSurah }.size
+                if (lastVisibleItem >= totalItems - 3 && viewModel.hasMoreAyahs() && !isLoading) {
+                    viewModel.fetchSurahDetail(surahNumber)
+                }
+            }
     }
 
     Scaffold(
@@ -110,16 +124,16 @@ fun SurahDetailScreen(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF020613), // Biru gelap
-                            Color(0xFF000000), // Biru medium
-                            Color(0xFF06040C)  // Hijau muda keabu-abuan
+                            Color(0xFF020613),
+                            Color(0xFF000000),
+                            Color(0xFF06040C)
                         )
                     )
                 )
                 .padding(paddingValues)
         ) {
             when {
-                isLoading -> LoadingView()
+                isLoading && surahDetail.isEmpty() -> LoadingView()
                 errorMessage != null -> ErrorView(errorMessage)
                 surahDetail.isEmpty() -> EmptyView()
                 else -> {
@@ -152,6 +166,13 @@ fun SurahDetailScreen(
                                     }
                                 }
                             )
+                        }
+                        if (isLoading) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator()
+                                }
+                            }
                         }
                     }
                 }

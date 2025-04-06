@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +24,7 @@ import com.example.utsquranappq.utiils.parseTajweedText
 import com.example.utsquranappq.viewmodel.JuzViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +49,7 @@ fun JuzDetailScreen(
     var isPlayingAll by remember { mutableStateOf(false) }
     var currentPlayingAyah by remember { mutableStateOf<Int?>(null) }
     val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
 
     DisposableEffect(Unit) {
         onDispose {
@@ -55,7 +58,19 @@ fun JuzDetailScreen(
     }
 
     LaunchedEffect(juzNumber) {
-        viewModel.fetchJuzDetail(juzNumber)
+        viewModel.fetchJuzDetail(juzNumber, reset = true)
+    }
+
+    // Deteksi scroll untuk memuat lebih banyak ayat
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                val lastVisibleItem = visibleItems.lastOrNull()?.index ?: 0
+                val totalItems = juzDetail.groupBy { it.surah.number }.size
+                if (lastVisibleItem >= totalItems - 3 && viewModel.hasMoreAyahs() && !isLoading) {
+                    viewModel.fetchJuzDetail(juzNumber)
+                }
+            }
     }
 
     Scaffold(
@@ -81,7 +96,7 @@ fun JuzDetailScreen(
                 .padding(paddingValues)
         ) {
             when {
-                isLoading -> {
+                isLoading && juzDetail.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
@@ -99,7 +114,7 @@ fun JuzDetailScreen(
                 else -> {
                     val grouped = juzDetail.groupBy { it.surah.number }
 
-                    LazyColumn {
+                    LazyColumn(state = listState) {
                         items(grouped.entries.toList()) { (surahNumber, ayahs) ->
                             val surahName = ayahs.firstOrNull()?.surah?.englishName ?: "Surah $surahNumber"
 
@@ -118,7 +133,7 @@ fun JuzDetailScreen(
                                                 ayahs = ayahs,
                                                 selectedQari = selectedQari,
                                                 mediaPlayer = mediaPlayer,
-                                                isPlayingAll = { isPlayingAll }, // 👈 status live
+                                                isPlayingAll = { isPlayingAll },
                                                 onAyahPlaying = { ayahNumber -> currentPlayingAyah = ayahNumber },
                                                 onFinished = {
                                                     isPlayingAll = false
@@ -134,6 +149,13 @@ fun JuzDetailScreen(
                                     }
                                 }
                             )
+                        }
+                        if (isLoading) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator()
+                                }
+                            }
                         }
                     }
                 }
@@ -153,6 +175,7 @@ fun JuzDetailScreen(
     }
 }
 
+// Fungsi SurahCardOnlyText dan playAllAudio tetap sama
 @Composable
 fun SurahCardOnlyText(
     surahName: String,
@@ -232,7 +255,7 @@ suspend fun playAllAudio(
 ) {
     try {
         for (ayah in ayahs) {
-            if (!isPlayingAll()) break // 🔥 STOP jika user udah tekan "Stop All"
+            if (!isPlayingAll()) break
 
             val audioEdition = ayah.edition.identifier.contains(selectedQari ?: "")
             val audioUrl = ayah.audio.takeIf { audioEdition }
@@ -253,7 +276,6 @@ suspend fun playAllAudio(
                         }
                         delay(100)
                     }
-
                 } catch (e: Exception) {
                     Log.e("AudioPlayer", "Error playing ayah ${ayah.numberInSurah}: ${e.message}")
                     continue

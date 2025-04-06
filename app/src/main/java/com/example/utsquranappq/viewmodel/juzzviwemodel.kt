@@ -7,7 +7,6 @@ import com.example.utsquranappq.repository.QuranRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import android.util.Log
 
 class JuzViewModel : ViewModel() {
     private val repository = QuranRepository()
@@ -15,47 +14,56 @@ class JuzViewModel : ViewModel() {
     private val _juzDetail = MutableStateFlow<List<AyahEdition>>(emptyList())
     val juzDetail: StateFlow<List<AyahEdition>> = _juzDetail
 
-    private val _isLoading = MutableStateFlow(true)
+    private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val editions = "quran-tajweed,en.transliteration,id.indonesian,ar.alafasy,ar.abdurrahmaansudais,ar.husary,ar.minshawi,ar.ahmedajamy"
+    private var currentPage = 0
+    private val pageSize = 10 // Memuat 10 ayat per halaman
+    private var totalAyahs = 0
+    private var juzNumberLoaded = -1
 
-    fun fetchJuzDetail(juzNumber: Int) {
+    fun fetchJuzDetail(juzNumber: Int, reset: Boolean = false) {
+        if (reset || juzNumber != juzNumberLoaded) {
+            currentPage = 0
+            _juzDetail.value = emptyList()
+            juzNumberLoaded = juzNumber
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-
             try {
+                val editions = "quran-tajweed,en.transliteration,id.indonesian,ar.alafasy,ar.abdurrahmaansudais,ar.husary,ar.minshawi,ar.ahmedajamy"
                 val response = repository.getJuz(juzNumber)
                 if (response.code == 200) {
-                    val ayahList = mutableListOf<AyahEdition>()
                     val ayahs = response.data.ayahs
-                    Log.d("JuzViewModel", "Jumlah ayat di Juz $juzNumber: ${ayahs.size}")
+                    totalAyahs = ayahs.size
+                    val startIndex = currentPage * pageSize
+                    val endIndex = minOf(startIndex + pageSize, totalAyahs)
+                    val ayahList = mutableListOf<AyahEdition>()
 
-                    for (ayah in ayahs) {
+                    ayahs.subList(startIndex, endIndex).forEach { ayah ->
                         val reference = "${ayah.surah.number}:${ayah.numberInSurah}"
-                        val editionsResponse = repository.getAyahEditions(reference, editions)
-
-                        if (editionsResponse.code == 200) {
-                            ayahList.addAll(editionsResponse.data)
-                        } else {
-                            Log.w("JuzViewModel", "Gagal ambil edisi untuk ayat $reference")
+                        val editionResponse = repository.getAyahEditions(reference, editions)
+                        if (editionResponse.code == 200) {
+                            ayahList.addAll(editionResponse.data)
                         }
                     }
-
-                    _juzDetail.value = ayahList
+                    _juzDetail.value = _juzDetail.value + ayahList
+                    currentPage++
                 } else {
-                    _error.value = "Gagal mengambil data Juz: ${response.status}"
+                    _error.value = "Failed to load Juz $juzNumber: ${response.status}"
                 }
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message}"
-                Log.e("JuzViewModel", "Exception: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
+    fun hasMoreAyahs() = (currentPage * pageSize) < totalAyahs
 }
