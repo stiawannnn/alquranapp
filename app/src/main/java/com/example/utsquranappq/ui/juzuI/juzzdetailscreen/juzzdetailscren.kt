@@ -1,4 +1,4 @@
-package com.example.utsquranappq.ui.JuzUI.JuzzDetailScreen
+package com.example.utsquranappq.ui.juzuI.juzzdetailscreen
 
 import android.media.MediaPlayer
 import android.util.Log
@@ -18,7 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.AyahEdition
-import com.example.utsquranappq.ui.SurahUI.SurahDetailScreen.VoiceSelectionDialog
+import com.example.utsquranappq.ui.surahui.surahdetailscreen.VoiceSelectionDialog
 import com.example.utsquranappq.utiils.parseTajweedText
 import com.example.utsquranappq.viewmodel.JuzViewModel
 import kotlinx.coroutines.delay

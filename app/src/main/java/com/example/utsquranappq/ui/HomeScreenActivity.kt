@@ -47,8 +47,8 @@ import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.juzListStatic
-import com.example.utsquranappq.ui.JuzUI.JuzScreen.JuzTab
-import com.example.utsquranappq.ui.SurahUI.SurahScreen.SurahTab
+import com.example.utsquranappq.ui.juzuI.juzscreen.JuzTab
+import com.example.utsquranappq.ui.surahui.surahscreen.SurahTab
 import com.example.utsquranappq.utiils.getTranslation
 import kotlinx.coroutines.delay
 

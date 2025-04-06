@@ -1,4 +1,4 @@
-package com.example.utsquranappq.ui.SurahUI.SurahScreen
+package com.example.utsquranappq.ui.surahui.surahscreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
