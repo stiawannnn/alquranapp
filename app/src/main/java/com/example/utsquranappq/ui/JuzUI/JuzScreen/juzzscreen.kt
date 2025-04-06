@@ -1,6 +1,4 @@
-package com.example.utsquranappq.ui
-import android.media.MediaPlayer
-import android.util.Log
+package com.example.utsquranappq.ui.JuzUI.JuzScreen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

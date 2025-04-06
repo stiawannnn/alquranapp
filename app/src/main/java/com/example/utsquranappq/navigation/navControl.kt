@@ -10,8 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.utsquranappq.ui.JuzDetailScreen
+import com.example.utsquranappq.ui.JuzUI.JuzzDetailScreen.JuzDetailScreen
 import com.example.utsquranappq.ui.*
+import com.example.utsquranappq.ui.JuzUI.JuzScreen.JuzTab
+import com.example.utsquranappq.ui.SurahUI.SurahDetailScreen.SurahDetailScreen
+import com.example.utsquranappq.ui.SurahUI.SurahScreen.SurahTab
 
 class HomeScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

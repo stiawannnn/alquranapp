@@ -1,4 +1,4 @@
-package com.example.utsquranappq.ui
+package com.example.utsquranappq.ui.SurahUI.SurahDetailScreen
 
 import android.media.MediaPlayer
 import android.util.Log
@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
+import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.model.Surah
 import com.example.utsquranappq.utiils.getTranslation
 import com.example.utsquranappq.utiils.parseTajweedText
@@ -40,7 +41,7 @@ fun SurahDetailScreen(
     surahNumber: Int?,
     navController: NavController,
     viewModel: SurahDetailViewModel = viewModel(),
-    surahViewModel: com.example.quranapp.viewmodel.SurahViewModel = viewModel()
+    surahViewModel: SurahViewModel = viewModel()
 ) {
     if (surahNumber == null || surahNumber <= 0) {
         Log.e("SurahDetailScreen", "Invalid surahNumber, displaying empty UI")
@@ -111,7 +112,7 @@ fun SurahDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Surah ${currentSurah?.name ?: ""}") },
+                title = { Text("Surah ${currentSurah?.englishName ?: ""}") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(painter = painterResource(id = R.drawable.arrowback), contentDescription = "Kembali")

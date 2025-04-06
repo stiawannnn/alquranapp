@@ -47,6 +47,8 @@ import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.juzListStatic
+import com.example.utsquranappq.ui.JuzUI.JuzScreen.JuzTab
+import com.example.utsquranappq.ui.SurahUI.SurahScreen.SurahTab
 import com.example.utsquranappq.utiils.getTranslation
 import kotlinx.coroutines.delay
 
@@ -279,7 +281,7 @@ fun getCurrentTime(): String {
 @Composable
 fun TabSection(navController: NavController) {
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabTitles = listOf("Surah","Juz", "BookMark")
+    val tabTitles = listOf("Surah","Juz")
 
     Column {
         TabRow(
@@ -305,17 +307,10 @@ fun TabSection(navController: NavController) {
         when (selectedTabIndex) {
             0 -> SurahTab(navController)
             1 -> JuzTab(navController)
-            2 -> HizbTa()
         }
     }
 }
 
-@Composable
-fun HizbTa() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Cooming Soon", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-    }
-}
 
 
 
