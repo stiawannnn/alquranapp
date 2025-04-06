@@ -41,7 +41,7 @@ fun SurahHeader(
             .height(200.dp)
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(Color(0xFF673AB7), Color(0xFFC49CC9), Color(0xFFC804EA))
+                    colors = listOf(Color(0xFF673AB7), Color(0xFF635A9F), Color(0xFF03A9F4))
                 ),
                 shape = RoundedCornerShape(23.dp)
             )

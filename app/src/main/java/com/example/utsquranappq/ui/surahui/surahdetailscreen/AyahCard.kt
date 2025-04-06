@@ -1,13 +1,21 @@
 package com.example.utsquranappq.ui.surahui.surahdetailscreen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.utsquranappq.R
 import com.example.utsquranappq.model.AyahEdition
 import com.example.utsquranappq.utiils.parseTajweedText
 
@@ -21,52 +29,140 @@ fun AyahCard(
     onAyahPlaying: (Int) -> Unit,
     onPlayAll: (Int) -> Unit
 ) {
-    // Ganti 'by' dengan akses langsung ke 'value'
     val isPlayingAll = audioManager.isPlayingAll.value
     val isPaused = audioManager.isPaused.value
 
+    // Group ayat berdasarkan numberInSurah
+    val groupedAyahs = ayahs.groupBy { it.numberInSurah }
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F0218), contentColor = Color(0xFFAA9AAB))
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            ayahs.forEach { ayah ->
-                when (ayah.edition.identifier) {
-                    "quran-tajweed" -> {
-                        val annotatedText = parseTajweedText("${ayah.numberInSurah}. ${ayah.text} ")
-                        Text(
-                            text = annotatedText,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontSize = 27.sp,
-                            color = if (currentPlayingAyah == ayah.numberInSurah) Color.Yellow else Color.White
+
+            groupedAyahs.forEach { (_, ayahGroup) ->
+                val tajweedAyah = ayahGroup.find { it.edition.identifier == "quran-tajweed" }
+                val transliterationAyah =
+                    ayahGroup.find { it.edition.identifier == "en.transliteration" }
+                val translationAyah = ayahGroup.find { it.edition.identifier == "id.indonesian" }
+                val audioAyah = ayahGroup.find {
+                    it.audio != null && (selectedQari == null || it.edition.identifier == selectedQari)
+                }
+
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+                ) {
+                    // Audio Player pojok kanan atas
+                    audioAyah?.let {
+                        AudioPlayer(
+                            audioUrl = it.audio ?: "",
+                            ayahNumber = it.numberInSurah,
+                            qariName = it.edition.englishName,
+                            allAyahs = allAyahs,
+                            selectedQari = selectedQari,
+                            onAyahPlaying = onAyahPlaying,
+                            isPlayingAll = isPlayingAll,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
                         )
                     }
-                    "en.transliteration" -> Text(text = "Latin: ${ayah.text}", style = MaterialTheme.typography.bodyMedium)
-                    "id.indonesian" -> Text(text = "Terjemahan: ${ayah.text}", style = MaterialTheme.typography.bodyMedium)
-                    else -> {
-                        if (ayah.audio != null && (selectedQari == null || ayah.edition.identifier == selectedQari)) {
-                            AudioPlayer(
-                                audioUrl = ayah.audio,
-                                ayahNumber = ayah.numberInSurah,
-                                qariName = ayah.edition.englishName,
-                                allAyahs = allAyahs,
-                                selectedQari = selectedQari,
-                                onAyahPlaying = onAyahPlaying,
-                                isPlayingAll = isPlayingAll
+
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 0.dp)) {
+
+                        // Nomor Ayat (gambar + nomor)
+                        Box(
+                            modifier = Modifier
+                                .padding(bottom = 33.dp)
+                                .align(Alignment.Start)
+                        ) {
+                            Box(
+                                modifier = Modifier.size(44.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.nomorsurah),
+                                    contentDescription = "Ayah Number",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                Text(
+                                    text = tajweedAyah?.numberInSurah?.toString() ?: "",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color(0xFF03A9F4),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    ),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+
+                        // Tajwid Text
+                        tajweedAyah?.let {
+                            val annotatedText = parseTajweedText("${it.text} ")
+                            Text(
+                                text = annotatedText,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 33.sp,
+                                    lineHeight = 66.sp,
+                                    fontFamily = FontFamily(Font(R.font.scheherazadenew)),
+                                    color = if (currentPlayingAyah == it.numberInSurah) Color.Yellow else Color(0xFFF3F3F3),
+                                    fontWeight = FontWeight.Normal,
+                                    textAlign = TextAlign.End
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(33.dp))
+
+                        // Transliterasi
+                        transliterationAyah?.let {
+                            Text(
+                                text = it.text,
+                                fontSize = 16.sp,
+                                lineHeight = 23.sp,
+                                style = MaterialTheme.typography.bodySmall.copy(color = Color(
+                                    0xFF00BCD4
+                                )
+                                ),
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Terjemahan Indonesia
+                        translationAyah?.let {
+                            Text(
+                                text = it.text,
+                                fontSize = 16.sp,
+                                lineHeight = 23.sp,
+                                style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
+                                textAlign = TextAlign.Start
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
-            Row(modifier = Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Tombol Play All & Stop
+            Row(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Button(
                     onClick = {
                         if (isPlayingAll) {
                             if (!isPaused) audioManager.pause() else audioManager.resume()
                         } else {
-                            onPlayAll(ayahs.first().numberInSurah)
+                            onPlayAll(ayahs.firstOrNull()?.numberInSurah ?: 0)
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -82,8 +178,12 @@ fun AyahCard(
                         color = Color.White
                     )
                 }
+
                 Button(
-                    onClick = { audioManager.stop(); onAyahPlaying(0) },
+                    onClick = {
+                        audioManager.stop()
+                        onAyahPlaying(0)
+                    },
                     enabled = isPlayingAll,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) {

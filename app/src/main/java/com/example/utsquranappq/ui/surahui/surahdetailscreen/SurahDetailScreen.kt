@@ -1,36 +1,17 @@
 package com.example.utsquranappq.ui.surahui.surahdetailscreen
 
 import android.util.Log
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -112,21 +93,43 @@ fun SurahDetailScreen(
                             onClick = { showSearchDialog = true; menuExpanded = false }
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF020613),
+                    titleContentColor = Color(0xFFECE7E7),
+                    actionIconContentColor = Color(0xFF673AB7),
+                    navigationIconContentColor = Color(0xFF9C27B0)
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF020613), // Biru gelap
+                            Color(0xFF000000), // Biru medium
+                            Color(0xFF06040C)  // Hijau muda keabu-abuan
+                        )
+                    )
+                )
+                .padding(paddingValues)
+        ) {
             when {
                 isLoading -> LoadingView()
                 errorMessage != null -> ErrorView(errorMessage)
                 surahDetail.isEmpty() -> EmptyView()
                 else -> {
                     LazyColumn(state = listState) {
-                        item { SurahHeader(
-                            currentSurah = currentSurah,
-                            surahDetail = surahDetail) }
+                        item {
+                            SurahHeader(
+                                currentSurah = currentSurah,
+                                surahDetail = surahDetail
+                            )
+                        }
                         items(surahDetail.groupBy { it.numberInSurah }.keys.toList()) { numberInSurah ->
                             val ayahs = surahDetail.filter { it.numberInSurah == numberInSurah }
                             AyahCard(
@@ -183,7 +186,11 @@ fun LoadingView() = Box(modifier = Modifier.fillMaxSize(), contentAlignment = Al
 
 @Composable
 fun ErrorView(errorMessage: String?) = Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Text(text = errorMessage ?: "Terjadi kesalahan", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
+    Text(
+        text = errorMessage ?: "Terjadi kesalahan",
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodyLarge
+    )
 }
 
 @Composable

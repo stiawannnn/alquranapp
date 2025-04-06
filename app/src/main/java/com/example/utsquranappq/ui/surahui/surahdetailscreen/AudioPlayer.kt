@@ -19,7 +19,8 @@ fun AudioPlayer(
     allAyahs: List<AyahEdition>,
     selectedQari: String?,
     onAyahPlaying: (Int) -> Unit,
-    isPlayingAll: Boolean
+    isPlayingAll: Boolean,
+    modifier: Modifier = Modifier // Tambah ini
 ) {
     val mediaPlayer = remember { MediaPlayer() }
     var isPlaying by remember { mutableStateOf(false) }
@@ -45,9 +46,12 @@ fun AudioPlayer(
         onDispose { mediaPlayer.release() }
     }
 
-    Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = modifier.padding(top = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
-            text = "Audio Ayat $ayahNumber ($qariName)",
+            text = "$ayahNumber ($qariName)",
             style = MaterialTheme.typography.bodySmall,
             color = Color.White.copy(alpha = 0.7f)
         )
