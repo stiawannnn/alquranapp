@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -103,7 +105,7 @@ fun SurahCardOnlyText(
                             .padding(12.dp)
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.qur3),
+                            painter = painterResource(id = R.drawable.qur4),
                             contentDescription = null,
                             modifier = Modifier
                                 .align(Alignment.Center)
@@ -137,32 +139,48 @@ fun SurahCardOnlyText(
 
                             Spacer(modifier = Modifier.width(12.dp))
 
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                // Teks Tajweed (Rata Kanan)
                                 Text(
                                     text = buildAnnotatedString { append(parseTajweedText(tajweedText)) },
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontSize = 22.sp,
-                                        lineHeight = 44.sp,
+                                        fontSize = 33.sp,
+                                        fontFamily = FontFamily(Font(R.font.scheherazadenew)),
+                                        lineHeight = 77.sp,
                                         color = if (currentPlayingAyah == ayahNumber || currentAyahPlaying == ayahNumber) Color.Yellow else Color.White,
                                         textAlign = TextAlign.End
-                                    )
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentWidth(Alignment.End) // Pastikan selalu rata kanan
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(11.dp))
+
+                                // Transliterasi (Rata Kiri)
                                 Text(
-                                    text = "Latin: $transliteration",
+                                    text = transliteration,
                                     style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontSize = 16.sp,
+                                        fontSize = 19.sp,
+                                        lineHeight = 33.sp,
                                         color = Color(0xFF00BCD4),
                                         textAlign = TextAlign.Start
-                                    )
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
                                 )
+                                Spacer(modifier = Modifier.height(11.dp))
+
+                                // Terjemahan (Rata Kiri)
                                 Text(
-                                    text = "Terjemahan: $translation",
+                                    text = translation,
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontSize = 16.sp,
+                                        lineHeight = 33.sp,
                                         color = Color.White,
                                         textAlign = TextAlign.Start
-                                    )
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }
@@ -176,12 +194,11 @@ fun SurahCardOnlyText(
                         modifier = Modifier.background(Color(0xFF1E1E1E))
                     ) {
                         audioAyah?.audio?.let { audioUrl ->
-                            // Play Audio (individu)
                             DropdownMenuItem(
                                 text = { Text("Play Audio", color = Color.White) },
                                 onClick = {
                                     if (currentAyahPlaying != ayahNumber) {
-                                        audioManager.stop() // Hentikan Play All jika sedang berjalan
+                                        audioManager.stop()
                                         mediaPlayer.stop()
                                         mediaPlayer.reset()
                                         try {
@@ -200,7 +217,6 @@ fun SurahCardOnlyText(
                                 }
                             )
 
-                            // Pause Audio (individu)
                             if (currentAyahPlaying == ayahNumber && mediaPlayer.isPlaying) {
                                 DropdownMenuItem(
                                     text = { Text("Pause Audio", color = Color.White) },
@@ -211,7 +227,6 @@ fun SurahCardOnlyText(
                                 )
                             }
 
-                            // Resume Audio (individu)
                             if (currentAyahPlaying == ayahNumber && !mediaPlayer.isPlaying) {
                                 DropdownMenuItem(
                                     text = { Text("Resume Audio", color = Color.White) },
@@ -222,7 +237,6 @@ fun SurahCardOnlyText(
                                 )
                             }
 
-                            // Stop Audio (individu)
                             if (currentAyahPlaying == ayahNumber) {
                                 DropdownMenuItem(
                                     text = { Text("Stop Audio", color = Color.White) },
@@ -242,7 +256,6 @@ fun SurahCardOnlyText(
                             )
                         }
 
-                        // Play All Audio
                         DropdownMenuItem(
                             text = { Text("Play All Audio", color = Color.White) },
                             onClick = {
@@ -251,14 +264,13 @@ fun SurahCardOnlyText(
                                     mediaPlayer.reset()
                                     currentAyahPlaying = null
                                     val index = if (startIndex >= 0) startIndex else 0
-                                    onPlayAll(index) // Mulai dari indeks ayat yang diklik
+                                    onPlayAll(index)
                                 }
                                 expanded = false
                             },
                             enabled = !audioManager.isPlayingAll.value && selectedQari != null
                         )
 
-                        // Pause All Audio
                         if (audioManager.isPlayingAll.value && !audioManager.isPaused.value) {
                             DropdownMenuItem(
                                 text = { Text("Pause All Audio", color = Color.White) },
@@ -269,7 +281,6 @@ fun SurahCardOnlyText(
                             )
                         }
 
-                        // Resume All Audio
                         if (audioManager.isPlayingAll.value && audioManager.isPaused.value) {
                             DropdownMenuItem(
                                 text = { Text("Resume All Audio", color = Color.White) },
@@ -280,7 +291,6 @@ fun SurahCardOnlyText(
                             )
                         }
 
-                        // Stop All Audio
                         if (audioManager.isPlayingAll.value) {
                             DropdownMenuItem(
                                 text = { Text("Stop All Audio", color = Color.White) },

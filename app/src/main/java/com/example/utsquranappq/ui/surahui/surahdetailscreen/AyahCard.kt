@@ -119,7 +119,7 @@ fun AyahCard(
                                     color = when {
                                         currentPlayingAyah == it.numberInSurah && !isPaused -> Color.Yellow
                                         currentPlayingAyah == it.numberInSurah && isPaused -> Color(
-                                            0xFF00E5FF
+                                            0xFFE3E300
                                         )
                                         else -> Color(0xFFFFFFFF)
                                     },
@@ -135,7 +135,7 @@ fun AyahCard(
                         transliterationAyah?.let {
                             Text(
                                 text = it.text,
-                                fontSize = 16.sp,
+                                fontSize = 19.sp,
                                 lineHeight = 23.sp,
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = Color(
@@ -151,7 +151,7 @@ fun AyahCard(
                         translationAyah?.let {
                             Text(
                                 text = it.text,
-                                fontSize = 16.sp,
+                                fontSize = 15.sp,
                                 lineHeight = 23.sp,
                                 style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
                                 textAlign = TextAlign.Start

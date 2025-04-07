@@ -24,7 +24,7 @@ fun parseTajweedText(text: String): AnnotatedString {
             "c" to Color(0xFFE288F6), // Ikhafa-shafawi
             "f" to Color(0xFFEE0606), // Ikhafa
             "w" to Color(0xFF58B800), // Idgham-shafawi
-            "i" to Color(0xFF216DE7), // Iqlab
+            "i" to Color(0xFF40C4FF), // Iqlab
             "a" to Color(0xFFA152DC), // Idgham with Ghunnah
             "u" to Color(0xFF8B948B), // Idgham without Ghunnah
             "d" to Color(0xFFA1A1A1), // Idgham-mutajanisayn
