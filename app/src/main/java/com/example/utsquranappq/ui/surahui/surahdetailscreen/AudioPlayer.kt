@@ -2,14 +2,18 @@ package com.example.utsquranappq.ui.surahui.surahdetailscreen
 
 import android.media.MediaPlayer
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.utsquranappq.model.AyahEdition
+import com.example.utsquranappq.R
 
 @Composable
 fun AudioPlayer(
@@ -51,12 +55,12 @@ fun AudioPlayer(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "$ayahNumber ($qariName)",
+            text = "Qari : $qariName",
             style = MaterialTheme.typography.bodySmall,
             color = Color.White.copy(alpha = 0.7f)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Button(
+        IconButton(
             onClick = {
                 if (isPrepared && !isPlayingAll) {
                     if (isPlaying) {
@@ -70,10 +74,15 @@ fun AudioPlayer(
                     }
                 }
             },
-            enabled = isPrepared && !isPlayingAll,
-            colors = ButtonDefaults.buttonColors(containerColor = if (isPlaying) Color.Red else Color.Green)
+            enabled = isPrepared && !isPlayingAll
         ) {
-            Text(text = if (isPlaying) "Pause" else "Play", color = Color.White)
+            Icon(
+                painter = painterResource(id = if (isPlaying) R.drawable.pause else R.drawable.play),
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = Color.Unspecified, // biar warna asli gambar tidak berubah
+                modifier = Modifier.size(33.dp)
+            )
         }
     }
 }
+

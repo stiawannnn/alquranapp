@@ -1,6 +1,7 @@
 package com.example.utsquranappq.ui.surahui.surahdetailscreen
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -53,9 +54,10 @@ fun AyahCard(
                     it.audio != null && (selectedQari == null || it.edition.identifier == selectedQari)
                 }
 
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
                 ) {
                     // Audio Player pojok kanan atas
                     audioAyah?.let {
@@ -72,9 +74,11 @@ fun AyahCard(
                         )
                     }
 
-                    Column(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 0.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 0.dp)
+                    ) {
 
                         // Nomor Ayat (gambar + nomor)
                         Box(
@@ -112,7 +116,13 @@ fun AyahCard(
                                     fontSize = 33.sp,
                                     lineHeight = 66.sp,
                                     fontFamily = FontFamily(Font(R.font.scheherazadenew)),
-                                    color = if (currentPlayingAyah == it.numberInSurah) Color.Yellow else Color(0xFFF3F3F3),
+                                    color = when {
+                                        currentPlayingAyah == it.numberInSurah && !isPaused -> Color.Yellow
+                                        currentPlayingAyah == it.numberInSurah && isPaused -> Color(
+                                            0xFF00E5FF
+                                        )
+                                        else -> Color(0xFFFFFFFF)
+                                    },
                                     fontWeight = FontWeight.Normal,
                                     textAlign = TextAlign.End
                                 ),
@@ -127,9 +137,10 @@ fun AyahCard(
                                 text = it.text,
                                 fontSize = 16.sp,
                                 lineHeight = 23.sp,
-                                style = MaterialTheme.typography.bodySmall.copy(color = Color(
-                                    0xFF00BCD4
-                                )
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Color(
+                                        0xFF00BCD4
+                                    )
                                 ),
                                 textAlign = TextAlign.Start
                             )
@@ -152,44 +163,66 @@ fun AyahCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Tombol Play All & Stop
-            Row(
-                modifier = Modifier.align(Alignment.End),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = {
-                        if (isPlayingAll) {
-                            if (!isPaused) audioManager.pause() else audioManager.resume()
-                        } else {
-                            onPlayAll(ayahs.firstOrNull()?.numberInSurah ?: 0)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isPlayingAll && !isPaused) Color.Yellow else Color.Blue
-                    )
-                ) {
-                    Text(
-                        text = when {
-                            isPlayingAll && !isPaused -> "Pause"
-                            isPlayingAll && isPaused -> "Resume"
-                            else -> "Play All"
-                        },
-                        color = Color.White
-                    )
-                }
 
-                Button(
-                    onClick = {
-                        audioManager.stop()
-                        onAyahPlaying(0)
-                    },
-                    enabled = isPlayingAll,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text("Stop", color = Color.White)
+            // Tombol Play All & Stop
+            Column(
+                modifier = Modifier.align(Alignment.End),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Putar Semua",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Play/Pause/Resume icon
+                    IconButton(
+                        onClick = {
+                            if (isPlayingAll) {
+                                if (!isPaused) audioManager.pause() else audioManager.resume()
+                            } else {
+                                onPlayAll(ayahs.firstOrNull()?.numberInSurah ?: 0)
+                            }
+                        }
+                    ) {
+                        val iconRes = when {
+                            isPlayingAll && !isPaused -> R.drawable.pause // <- pastikan ada di drawable
+                            isPlayingAll && isPaused -> R.drawable.play
+                            else -> R.drawable.play
+                        }
+
+                        Icon(
+                            painter = painterResource(id = iconRes),
+                            contentDescription = "Play All",
+                            modifier = Modifier.size(36.dp), // ukuran ikon
+                            tint = Color.Unspecified // biar warnanya sesuai icon asli (transparan, full color)
+                        )
+                    }
+
+                    // Stop icon
+                    IconButton(
+                        onClick = {
+                            audioManager.stop()
+                            onAyahPlaying(0)
+                        },
+                        enabled = isPlayingAll
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.stop),
+                            contentDescription = "Stop",
+                            modifier = Modifier.size(36.dp),
+                            tint = Color.Unspecified
+                        )
+                    }
                 }
             }
+
         }
     }
-}
+
+        }

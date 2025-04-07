@@ -13,20 +13,20 @@ fun parseTajweedText(text: String): AnnotatedString {
     return buildAnnotatedString {
         // Mapping warna berdasarkan tabel TajweedParser
         val colorMap = mapOf(
-            "h" to Color(0xFFAAAAAA), // Hamza-wasl
-            "s" to Color(0xFFAAAAAA), // Silent
-            "l" to Color(0xFFAAAAAA), // Laam-shamsiyah
-            "n" to Color(0xFF537FFF), // Madda-normal
-            "p" to Color(0xFF4050FF), // Madda-permissible
-            "m" to Color(0xFF000EBC), // Madda-necessary
-            "q" to Color(0xFFDD0008), // Qalaqah
-            "o" to Color(0xFF2144C1), // Madda-obligatory
-            "c" to Color(0xFFD500B7), // Ikhafa-shafawi
-            "f" to Color(0xFF9400A8), // Ikhafa
+            "h" to Color(0xFFFFFFFF), // Hamza-wasl
+            "s" to Color(0xFFFFFFFF), // Silent
+            "l" to Color(0xFFFFFFFF), // Laam-shamsiyah
+            "n" to Color(0xFFFFFFFF), // Madda-normal
+            "p" to Color(0xFFFFFFFF), // Madda-permissible
+            "m" to Color(0xFFFFFFFF), // Madda-necessary
+            "q" to Color(0xFF12B266), // Qalaqah
+            "o" to Color(0xFFFFFFFF), // Madda-obligatory
+            "c" to Color(0xFFE288F6), // Ikhafa-shafawi
+            "f" to Color(0xFFEE0606), // Ikhafa
             "w" to Color(0xFF58B800), // Idgham-shafawi
-            "i" to Color(0xFF26BFFD), // Iqlab
-            "a" to Color(0xFF169777), // Idgham with Ghunnah
-            "u" to Color(0xFF169200), // Idgham without Ghunnah
+            "i" to Color(0xFF216DE7), // Iqlab
+            "a" to Color(0xFFA152DC), // Idgham with Ghunnah
+            "u" to Color(0xFF8B948B), // Idgham without Ghunnah
             "d" to Color(0xFFA1A1A1), // Idgham-mutajanisayn
             "b" to Color(0xFFA1A1A1), // Idgham-mutaqaribayn
             "g" to Color(0xFFFF7E1E)  // Ghunna
