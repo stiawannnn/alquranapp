@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun DoaScreen() {
+fun JadwalSholat() {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF2A41BE), // Biru muda

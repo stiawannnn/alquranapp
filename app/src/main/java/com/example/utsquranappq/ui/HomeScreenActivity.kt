@@ -317,7 +317,7 @@ fun TabSection(navController: NavController) {
 @Composable
 fun BottomNavigationBar(navController: NavController) {
     NavigationBar(containerColor = Color(0xFF150D23)) {
-        val items = listOf("Quran", "Qiblat", "Quran", "Doa", "Bookmark")
+        val items = listOf("Jadwal", "Qiblat", "Quran", "Bookmark", "Tajweed")
         val icons = listOf(
             R.drawable.prayicon, R.drawable.calendar,
             R.drawable.qur5, R.drawable.prayicon, R.drawable.prayicon
@@ -340,10 +340,12 @@ fun BottomNavigationBar(navController: NavController) {
                     selectedItem = index
                     // Navigate to the corresponding screen
                     when (index) {
-                        0 -> navController.navigate("quran") // Navigate to Quran screen
+                        0 -> navController.navigate("sholat") // Navigate to Quran screen
                         1 -> navController.navigate("Qiblat") // Navigate to Tips screen (optional)
-                        2 -> navController.navigate("home") // Back to home screen
-                        // Add more navigation cases as needed
+                        2 -> navController.navigate("home")
+                        3 -> navController.navigate("bookmark")
+                        4 -> navController.navigate("info")
+
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(

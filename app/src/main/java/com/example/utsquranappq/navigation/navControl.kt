@@ -31,7 +31,9 @@ class HomeScreenActivity : ComponentActivity() {
                     modifier = Modifier.padding(paddingValues)
                 ) {
                     composable("home") { HomeScreen(navController) }
-                    composable("quran") { DoaScreen() }
+                    composable("info") { infotajweedscreen() }
+                    composable("sholat") { JadwalSholat() }
+                    composable("bookmark") { BookmarkScreen() }
                     composable("Qiblat") { QiblaCompassScreen() }
                     composable("surahTab") { SurahTab(navController) }
                     composable("surahDetail/{surahNumber}") { backStackEntry ->
