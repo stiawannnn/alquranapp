@@ -32,7 +32,7 @@ class HomeScreenActivity : ComponentActivity() {
                 ) {
                     composable("home") { HomeScreen(navController) }
                     composable("info") { TajwidScreen() }
-                    composable("sholat") { JadwalSholat() }
+                    composable("sholat") { JadwalSholat(navController) }
                     composable("bookmark") { BookmarkScreen() }
                     composable("Qiblat") { QiblaCompassScreen() }
                     composable("surahTab") { SurahTab(navController) }
