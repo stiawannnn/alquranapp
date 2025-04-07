@@ -135,10 +135,16 @@ fun JuzDetailScreen(
 
                     LazyColumn(state = listState) {
                         items(grouped.entries.toList()) { (surahNumber, ayahs) ->
-                            val surahName =
-                                ayahs.firstOrNull()?.surah?.englishName ?: "Surah $surahNumber"
+                            val surah = ayahs.firstOrNull()?.surah
+                            val surahName = surah?.englishName ?: "Surah $surahNumber"
+                            val englishTranslation = surah?.englishNameTranslation ?: "Unknown Translation"
+                            val revelationType = surah?.revelationType ?: "Unknown Type"
+                            val numberOfAyahs = surah?.numberOfAyahs ?: 0 // Ambil jumlah ayat
 
                             SurahCardOnlyText(
+                                englishTranslation = englishTranslation,
+                                revelationType = revelationType,
+                                numberOfAyahs = numberOfAyahs,
                                 surahName = surahName,
                                 ayahs = ayahs,
                                 selectedQari = selectedQari,

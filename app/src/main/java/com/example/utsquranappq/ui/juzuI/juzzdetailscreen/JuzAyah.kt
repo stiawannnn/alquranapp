@@ -28,6 +28,9 @@ import com.example.utsquranappq.utiils.parseTajweedText
 
 @Composable
 fun SurahCardOnlyText(
+    englishTranslation: String,
+    revelationType: String,
+    numberOfAyahs: Int,
     surahName: String,
     ayahs: List<AyahEdition>,
     selectedQari: String?,
@@ -51,14 +54,11 @@ fun SurahCardOnlyText(
             .fillMaxWidth()
             .padding(horizontal = 11.dp, vertical = 7.dp)
     ) {
-        Text(
-            text = "Surah: $surahName",
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontSize = 23.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            ),
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+        SurahHeaderBox(
+            englishName = surahName,
+            englishTranslation = englishTranslation,
+            revelationType = revelationType,
+            numberOfAyahs = numberOfAyahs
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -110,7 +110,7 @@ fun SurahCardOnlyText(
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .size(200.dp)
-                                .alpha(0.15f)
+                                .alpha(0.07f)
                         )
 
                         Row(
