@@ -31,7 +31,7 @@ class HomeScreenActivity : ComponentActivity() {
                     modifier = Modifier.padding(paddingValues)
                 ) {
                     composable("home") { HomeScreen(navController) }
-                    composable("info") { infotajweedscreen() }
+                    composable("info") { TajwidScreen() }
                     composable("sholat") { JadwalSholat() }
                     composable("bookmark") { BookmarkScreen() }
                     composable("Qiblat") { QiblaCompassScreen() }
