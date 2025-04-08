@@ -32,6 +32,7 @@ fun SurahTab(
     viewModel: SurahViewModel = viewModel()
 ) {
     val surahList by viewModel.surahList.collectAsState()
+    
 
     Column(
         modifier = Modifier

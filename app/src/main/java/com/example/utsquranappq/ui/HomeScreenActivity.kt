@@ -5,7 +5,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,6 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
+import com.example.utsquranappq.model.Surah
 import com.example.utsquranappq.model.juzListStatic
 import com.example.utsquranappq.ui.juzuI.juzscreen.JuzTab
 import com.example.utsquranappq.ui.surahui.surahscreen.SurahTab
@@ -59,6 +59,12 @@ fun HomeScreen(navController: NavController, surahViewModel: SurahViewModel = vi
     var isAdhanEnabled by remember { mutableStateOf(prefs.getBoolean("isAdhanPrayerEnabled", false)) }
     val hasPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    // Last Seen Data
+    val lastSurah by remember { mutableStateOf(prefs.getInt("lastSurah", -1)) }
+    val lastAyah by remember { mutableStateOf(prefs.getInt("lastAyah", -1)) }
+    val lastJuz by remember { mutableStateOf(prefs.getInt("lastJuz", -1)) }
+    val lastJuzSurah by remember { mutableStateOf(prefs.getInt("lastJuzSurah", -1)) }
+    val lastJuzAyah by remember { mutableStateOf(prefs.getInt("lastJuzAyah", -1)) }
 
     val surahList by surahViewModel.surahList.collectAsState()
     val matchedResults = remember(searchQuery, surahList) {
@@ -94,7 +100,7 @@ fun HomeScreen(navController: NavController, surahViewModel: SurahViewModel = vi
                 .background(Brush.linearGradient(listOf(Color(0xFF0C0C1F), Color(0xFF050B2C), Color(0xFF06062D)), Offset(0f, 0f), Offset(1900f, 880f)))
                 .padding(padding)
         ) {
-            GreetingSection()
+            GreetingSection(lastSurah, lastAyah, lastJuz, lastJuzSurah, lastJuzAyah, surahList, navController)
             TabSection(navController)
         }
         if (showSettings) {
@@ -247,9 +253,31 @@ private fun getPrayerName(time: String): String = when (time) {
     "19:32" -> "Isya"
     else -> "Unknown"
 }
+fun saveLastSeen(context: Context, surah: Int? = null, ayah: Int? = null, juz: Int? = null, juzSurah: Int? = null, juzAyah: Int? = null) {
+    val prefs = context.getSharedPreferences("QuranPrefs", Context.MODE_PRIVATE)
+    with(prefs.edit()) {
+        if (surah != null && ayah != null) {
+            putInt("lastSurah", surah)
+            putInt("lastAyah", ayah)
+            putInt("lastJuz", -1)
+            putInt("lastJuzSurah", -1)
+            putInt("lastJuzAyah", -1)
+        } else if (juz != null && juzSurah != null && juzAyah != null) {
+            putInt("lastJuz", juz)
+            putInt("lastJuzSurah", juzSurah)
+            putInt("lastJuzAyah", juzAyah)
+            putInt("lastSurah", -1)
+            putInt("lastAyah", -1)
+        }
+        apply()
+    }
+}
 // Fungsi lain (GreetingSection, LastReadSection, TabSection, BottomNavigationBar) tetap sama
 @Composable
-fun GreetingSection() {
+fun GreetingSection(
+    lastSurah: Int, lastAyah: Int, lastJuz: Int, lastJuzSurah: Int, lastJuzAyah: Int,
+    surahList: List<Surah>, navController: NavController
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -273,12 +301,15 @@ fun GreetingSection() {
                 .padding(top = 0.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
-        LastReadSection()
+        LastSeenSection(lastSurah, lastAyah, lastJuz, lastJuzSurah, lastJuzAyah, surahList, navController)
     }
 }
 
 @Composable
-fun LastReadSection() {
+fun LastSeenSection(
+    lastSurah: Int, lastAyah: Int, lastJuz: Int, lastJuzSurah: Int, lastJuzAyah: Int,
+    surahList: List<Surah>, navController: NavController
+) {
     var currentTime by remember { mutableStateOf(getCurrentTime()) }
 
     LaunchedEffect(Unit) {
@@ -286,6 +317,18 @@ fun LastReadSection() {
             delay(1000)
             currentTime = getCurrentTime()
         }
+    }
+
+    val lastSeenText = when {
+        lastSurah != -1 && lastAyah != -1 -> {
+            val surahName = surahList.find { it.number == lastSurah }?.let { getTranslation(it.englishName, "", "").first } ?: "Unknown"
+            "$surahName - Ayat $lastAyah"
+        }
+        lastJuz != -1 && lastJuzSurah != -1 && lastJuzAyah != -1 -> {
+            val surahName = surahList.find { it.number == lastJuzSurah }?.let { getTranslation(it.englishName, "", "").first } ?: "Unknown"
+            "Juz $lastJuz - $surahName, Ayat $lastJuzAyah"
+        }
+        else -> "Belum ada riwayat"
     }
 
     Box(
@@ -298,6 +341,12 @@ fun LastReadSection() {
                 ),
                 shape = RoundedCornerShape(23.dp)
             )
+            .clickable {
+                when {
+                    lastSurah != -1 -> navController.navigate("surahDetail/$lastSurah")
+                    lastJuz != -1 -> navController.navigate("juz_detail/$lastJuz")
+                }
+            }
             .padding(16.dp)
     ) {
         Column {
@@ -307,8 +356,7 @@ fun LastReadSection() {
                 Text("Last Read", color = Color.White, fontWeight = FontWeight.Medium)
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Al-Fatihah", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text("Ayat No: 1", color = Color.White)
+            Text(lastSeenText, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Text(currentTime, color = Color.White, fontSize = 14.sp)
         }

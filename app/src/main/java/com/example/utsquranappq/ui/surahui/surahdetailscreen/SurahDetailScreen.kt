@@ -12,15 +12,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
+import com.example.utsquranappq.ui.saveLastSeen
 import com.example.utsquranappq.viewmodel.SurahDetailViewModel
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +38,7 @@ fun SurahDetailScreen(
         return
     }
 
+    val context = LocalContext.current
     val surahDetail by viewModel.surahDetail.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.error.collectAsState()
@@ -57,6 +60,19 @@ fun SurahDetailScreen(
         viewModel.fetchSurahDetail(surahNumber, reset = true)
     }
 
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .debounce(500) // Debounce untuk mencegah penyimpanan berulang saat scroll cepat
+            .collect { index ->
+                if (index >= 0 && surahDetail.isNotEmpty()) {
+                    val ayah = surahDetail.groupBy { it.numberInSurah }.keys.toList().getOrNull(index)
+                    ayah?.let {
+                        saveLastSeen(context, surah = surahNumber, ayah = it)
+                    }
+                }
+            }
+    }
+
     LaunchedEffect(targetAyahNumber) {
         targetAyahNumber?.let { ayahNumber ->
             val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
@@ -69,7 +85,6 @@ fun SurahDetailScreen(
         }
     }
 
-    // Deteksi scroll untuk memuat lebih banyak ayat
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }
             .collect { visibleItems ->
@@ -123,11 +138,7 @@ fun SurahDetailScreen(
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF020613),
-                            Color(0xFF000000),
-                            Color(0xFF06040C)
-                        )
+                        colors = listOf(Color(0xFF020613), Color(0xFF000000), Color(0xFF06040C))
                     )
                 )
                 .padding(paddingValues)
@@ -139,10 +150,7 @@ fun SurahDetailScreen(
                 else -> {
                     LazyColumn(state = listState) {
                         item {
-                            SurahHeader(
-                                currentSurah = currentSurah,
-                                surahDetail = surahDetail
-                            )
+                            SurahHeader(currentSurah = currentSurah, surahDetail = surahDetail)
                         }
                         items(surahDetail.groupBy { it.numberInSurah }.keys.toList()) { numberInSurah ->
                             val ayahs = surahDetail.filter { it.numberInSurah == numberInSurah }
