@@ -1,34 +1,22 @@
 package com.example.utsquranappq.ui
+
+import android.Manifest
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
+import android.os.Build
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import android.icu.text.SimpleDateFormat
-import android.icu.util.TimeZone
-import java.util.Locale
-import androidx.compose.material3.TextFieldDefaults
-import java.util.Date
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,11 +25,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
@@ -50,67 +42,63 @@ import com.example.utsquranappq.model.juzListStatic
 import com.example.utsquranappq.ui.juzuI.juzscreen.JuzTab
 import com.example.utsquranappq.ui.surahui.surahscreen.SurahTab
 import com.example.utsquranappq.utiils.getTranslation
+import com.example.utsquranappq.work.QuranReminderReceiver
 import kotlinx.coroutines.delay
-
-
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @Composable
-fun HomeScreen(
-    navController: NavController,
-    surahViewModel: SurahViewModel = viewModel()
-) {
+fun HomeScreen(navController: NavController, surahViewModel: SurahViewModel = viewModel()) {
     var searchQuery by remember { mutableStateOf("") }
+    var showSettings by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("QuranPrefs", Context.MODE_PRIVATE)
+    var reminderTime by remember { mutableStateOf(prefs.getString("reminderTime", "08:00") ?: "08:00") }
+    var isAdhanEnabled by remember { mutableStateOf(prefs.getBoolean("isAdhanPrayerEnabled", false)) }
+    val hasPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
     val surahList by surahViewModel.surahList.collectAsState()
-    val juzList = juzListStatic
+    val matchedResults = remember(searchQuery, surahList) {
+        (surahList.filter { it.name.contains(searchQuery, true) || it.englishName.contains(searchQuery, true) }
+            .map { "${it.number}. ${getTranslation(it.englishName, "", "").first}" to "surahDetail/${it.number}" }) +
+                juzListStatic.filter { "Juz ${it.number}".contains(searchQuery, true) }
+                    .map { "Juz ${it.number}" to "juz_detail/${it.number}" }
+    }
 
-    val matchedResults = remember(searchQuery, surahList, juzList) {
-        val surahMatches = surahList.filter {
-            it.name.contains(searchQuery, ignoreCase = true) ||
-                    it.englishName.contains(searchQuery, ignoreCase = true)
-        }.map {
-            val translated = getTranslation(it.englishName, "dummyMeaning", "dummyRevelation")
-            val surahNameIndo = translated.first // Nama surah dalam bahasa Indonesia
-            "${it.number}. $surahNameIndo" to "surahDetail/${it.number}"
+    LaunchedEffect(Unit) { createNotificationChannel(context) }
+    LaunchedEffect(reminderTime, hasPermission) {
+        if (hasPermission) {
+            prefs.edit().putString("reminderTime", reminderTime).apply()
+            scheduleReminder(context, "quran", reminderTime, 0)
         }
-
-        val juzMatches = juzList.filter {
-            "Juz ${it.number}".contains(searchQuery, ignoreCase = true)
-        }.map {
-            "Juz ${it.number}" to "juz_detail/${it.number}"
+    }
+    LaunchedEffect(isAdhanEnabled, hasPermission) {
+        if (hasPermission) {
+            prefs.edit().putBoolean("isAdhanPrayerEnabled", isAdhanEnabled).apply()
+            if (isAdhanEnabled) scheduleAdhan(context) else cancelAdhan(context)
         }
-
-        surahMatches + juzMatches
     }
 
     Scaffold(
         topBar = {
-            TopBar(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                onSearchResultClick = { route ->
-                    navController.navigate(route)
-                    searchQuery = "" // Reset setelah klik
-                },
-                showResults = searchQuery.isNotEmpty() && matchedResults.isNotEmpty(),
-                matchedResults = matchedResults
-            )
+            TopBar(searchQuery, { searchQuery = it }, { navController.navigate(it); searchQuery = "" },
+                searchQuery.isNotEmpty() && matchedResults.isNotEmpty(), matchedResults, { showSettings = true })
         }
     ) { padding ->
-        val gradientBrush = Brush.linearGradient(
-            colors = listOf(Color(0xFF0C0C1F), Color(0xFF050B2C), Color(0xFF06062D)),
-            start = Offset(0f, 0f),
-            end = Offset(1900f, 880f)
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientBrush)
+                .background(Brush.linearGradient(listOf(Color(0xFF0C0C1F), Color(0xFF050B2C), Color(0xFF06062D)), Offset(0f, 0f), Offset(1900f, 880f)))
                 .padding(padding)
         ) {
             GreetingSection()
             TabSection(navController)
+        }
+        if (showSettings) {
+            SettingsDialog(reminderTime, { reminderTime = it }, isAdhanEnabled, { isAdhanEnabled = it }, { showSettings = false }, hasPermission)
         }
     }
 }
@@ -118,92 +106,155 @@ fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onSearchResultClick: (String) -> Unit,
-    showResults: Boolean,
-    matchedResults: List<Pair<String, String>>
+    searchQuery: String, onSearchChange: (String) -> Unit, onSearchClick: (String) -> Unit,
+    showResults: Boolean, results: List<Pair<String, String>>, onMenuClick: () -> Unit
 ) {
     var isSearching by remember { mutableStateOf(false) }
-
     Column {
         TopAppBar(
             title = {
                 if (isSearching) {
                     TextField(
-                        value = searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        placeholder = { Text("Cari Surah atau Juz", color = Color.Gray) },
-                        singleLine = true,
-                        colors = TextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            cursorColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        modifier = Modifier.fillMaxWidth()
+                        value = searchQuery, onValueChange = onSearchChange, placeholder = { Text("Cari Surah/Juz", color = Color.Gray) },
+                        singleLine = true, colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent, cursorColor = Color.White,
+                            focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent
+                        ), modifier = Modifier.fillMaxWidth()
                     )
-                } else {
-                    Text(
-                        "Al-Qur'an",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
+                } else Text("Al-Qur'an", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
             },
-            navigationIcon = {
-                IconButton(onClick = { /* Handle menu */ }) {
-                    Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
-                }
-            },
-            actions = {
-                IconButton(onClick = { isSearching = !isSearching }) {
-                    Icon(Icons.Filled.Search, contentDescription = "Search", tint = Color.White)
-                }
-            },
+            navigationIcon = { IconButton(onClick = onMenuClick) { Icon(Icons.Filled.Menu, "Menu", tint = Color.White) } },
+            actions = { IconButton(onClick = { isSearching = !isSearching }) { Icon(Icons.Filled.Search, "Search", tint = Color.White) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F0E2A))
         )
-
         if (isSearching && showResults) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFF1E1E1E))
-            ) {
-                items(matchedResults) { pair ->
-                    val surahName = pair.first
-                    val route = pair.second
-
-                    Text(
-                        text = surahName,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onSearchResultClick(route)
-                            }
-                            .padding(16.dp),
-                        color = Color.White
-                    )
+            LazyColumn(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E1E1E))) {
+                items(results) { (name, route) ->
+                    Text(name, modifier = Modifier.fillMaxWidth().clickable { onSearchClick(route) }.padding(16.dp), color = Color.White)
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsDialog(
+    reminderTime: String, onTimeChange: (String) -> Unit, isAdhanEnabled: Boolean,
+    onAdhanToggle: (Boolean) -> Unit, onDismiss: () -> Unit, hasPermission: Boolean
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss, title = { Text("Pengaturan Pengingat", color = Color.White) },
+        text = {
+            Column {
+                if (!hasPermission) Text("Izin notifikasi diperlukan.", color = Color.Red, modifier = Modifier.padding(bottom = 8.dp))
+                Text("Waktu Pengingat Harian", color = Color.White)
+                SimpleTimePicker(reminderTime, onTimeChange)
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Aktifkan Adzan Sholat", color = Color.White)
+                    Switch(checked = isAdhanEnabled, onCheckedChange = onAdhanToggle, enabled = hasPermission)
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("OK", color = Color.White) } },
+        containerColor = Color(0xFF1E1E1E), textContentColor = Color.White
+    )
+}
 
+@Composable
+fun SimpleTimePicker(initialTime: String, onTimeChange: (String) -> Unit) {
+    val context = LocalContext.current
+    var time by remember { mutableStateOf(initialTime) }
+    Button(onClick = {
+        val (hour, minute) = time.split(":").map { it.toIntOrNull() ?: 0 }
+        android.app.TimePickerDialog(context, { _, h, m ->
+            time = String.format("%02d:%02d", h, m); onTimeChange(time)
+        }, hour, minute, true).show()
+    }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+        Text("Pilih Waktu: $time", color = Color.White, fontSize = 16.sp)
+    }
+}
 
+fun createNotificationChannel(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channel = android.app.NotificationChannel("quran_channel", "Quran Reminder", android.app.NotificationManager.IMPORTANCE_HIGH).apply {
+            description = "Pengingat Al-Qur'an dan Adzan"
+            setShowBadge(true)
+            enableLights(true)
+            enableVibration(true)
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+            // Tidak ada setSound di sini untuk menghindari suara default
+        }
+        context.getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(channel)
+    }
+}
 
+fun scheduleReminder(context: Context, type: String, time: String, requestCode: Int) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val intent = Intent(context, QuranReminderReceiver::class.java).apply {
+        putExtra("type", type)
+        putExtra("prayerTime", time)
+        if (type == "adhan") putExtra("prayerName", getPrayerName(time))
+        if (type == "adhan") putExtra("isAdhanEnabled", true)
+    }
+    val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    val calendar = Calendar.getInstance().apply {
+        val (hours, minutes) = time.split(":").map { it.toInt() }
+        set(Calendar.HOUR_OF_DAY, hours)
+        set(Calendar.MINUTE, minutes)
+        set(Calendar.SECOND, 0)
+        if (before(Calendar.getInstance())) add(Calendar.DAY_OF_YEAR, 1)
+    }
+
+    val triggerTime = calendar.timeInMillis
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && alarmManager.canScheduleExactAlarms()) {
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+    } else {
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+    }
+}
+
+fun scheduleAdhan(context: Context) {
+    val prayerTimes = listOf("04:59" to "Subuh", "12:20" to "Dzuhur", "15:30" to "Ashar", "18:23" to "Maghrib", "19:32" to "Isya")
+    prayerTimes.forEachIndexed { index, (time, _) -> scheduleReminder(context, "adhan", time, index + 1) }
+}
+
+fun cancelAdhan(context: Context) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val prayerTimes = listOf("04:59" to "Subuh", "12:20" to "Dzuhur", "15:30" to "Ashar", "18:23" to "Maghrib", "19:32" to "Isya")
+    prayerTimes.forEachIndexed { index, (time, name) ->
+        val intent = Intent(context, QuranReminderReceiver::class.java).apply {
+            putExtra("type", "adhan")
+            putExtra("prayerTime", time)
+            putExtra("prayerName", name)
+            putExtra("isAdhanEnabled", true)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(context, index + 1, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        alarmManager.cancel(pendingIntent)
+    }
+}
+
+private fun getPrayerName(time: String): String = when (time) {
+    "04:59" -> "Subuh"
+    "12:20" -> "Dzuhur"
+    "15:30" -> "Ashar"
+    "18:23" -> "Maghrib"
+    "19:32" -> "Isya"
+    else -> "Unknown"
+}
+// Fungsi lain (GreetingSection, LastReadSection, TabSection, BottomNavigationBar) tetap sama
 @Composable
 fun GreetingSection() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 11.dp),
-        horizontalAlignment = Alignment.CenterHorizontally // Ini yang membuat semua child di tengah
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "السَّلاَمُ عَلَيْكُمْ",
@@ -211,8 +262,8 @@ fun GreetingSection() {
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily(Font(R.font.hafs)),
             color = Color.White,
-            textAlign = TextAlign.Center, // Untuk memastikan teks arab rata tengah
-            modifier = Modifier.fillMaxWidth() // Agar textAlign bekerja optimal
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
         Image(
             painter = painterResource(id = R.drawable.quran1),
@@ -221,22 +272,19 @@ fun GreetingSection() {
                 .size(107.dp)
                 .padding(top = 0.dp)
         )
-
-        Spacer(modifier = Modifier.height(16.dp)) // Jarak antara gambar dan LastReadSection
-
+        Spacer(modifier = Modifier.height(16.dp))
         LastReadSection()
     }
 }
+
 @Composable
 fun LastReadSection() {
-    // Menyimpan waktu dalam state agar bisa diupdate
     var currentTime by remember { mutableStateOf(getCurrentTime()) }
 
-    // Memperbarui waktu setiap detik
     LaunchedEffect(Unit) {
         while (true) {
-            delay(1000)  // Delay 1 detik
-            currentTime = getCurrentTime()  // Update waktu
+            delay(1000)
+            currentTime = getCurrentTime()
         }
     }
 
@@ -262,32 +310,29 @@ fun LastReadSection() {
             Text("Al-Fatihah", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text("Ayat No: 1", color = Color.White)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(currentTime, color = Color.White, fontSize = 14.sp) // Tampilkan waktu yang diperbarui
+            Text(currentTime, color = Color.White, fontSize = 14.sp)
         }
     }
 }
 
-// Fungsi untuk mendapatkan waktu saat ini
 fun getCurrentTime(): String {
     val locale = Locale.getDefault()
     val timeZone = TimeZone.getDefault()
-    val dateFormat = SimpleDateFormat("EEEE, dd MMMM yyyy hh:mm:ss a", locale)  // Format: Senin, 01 April 2025 12:45:30
+    val dateFormat = java.text.SimpleDateFormat("EEEE, dd MMMM yyyy hh:mm:ss a", locale)
     dateFormat.timeZone = timeZone
-    return dateFormat.format(Date())  // Format tanggal dan waktu
+    return dateFormat.format(Date())
 }
-
-
 
 @Composable
 fun TabSection(navController: NavController) {
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabTitles = listOf("Surah","Juz")
+    val tabTitles = listOf("Surah", "Juz")
 
     Column {
         TabRow(
             selectedTabIndex = selectedTabIndex,
-            containerColor = Color(0xFF0D1B2A), // Warna latar TabRow
-            contentColor = Color.White // Warna indikator tab terpilih
+            containerColor = Color(0xFF0D1B2A),
+            contentColor = Color.White
         ) {
             tabTitles.forEachIndexed { index, title ->
                 Tab(
@@ -310,9 +355,6 @@ fun TabSection(navController: NavController) {
         }
     }
 }
-
-
-
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
@@ -338,14 +380,12 @@ fun BottomNavigationBar(navController: NavController) {
                 selected = selectedItem == index,
                 onClick = {
                     selectedItem = index
-                    // Navigate to the corresponding screen
                     when (index) {
-                        0 -> navController.navigate("sholat") // Navigate to Quran screen
-                        1 -> navController.navigate("Qiblat") // Navigate to Tips screen (optional)
+                        0 -> navController.navigate("sholat")
+                        1 -> navController.navigate("Qiblat")
                         2 -> navController.navigate("home")
                         3 -> navController.navigate("bookmark")
                         4 -> navController.navigate("info")
-
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(

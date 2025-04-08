@@ -1,12 +1,15 @@
 package com.example.utsquranappq.ui
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -26,16 +29,39 @@ import com.example.utsquranappq.navigation.HomeScreenActivity
 
 @SuppressLint("CustomSplashScreen")
 class SplashScreenActivity : ComponentActivity() {
+
+    private val requestPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.all { it.value }
+        Handler(Looper.getMainLooper()).postDelayed({
+            startActivity(Intent(this, HomeScreenActivity::class.java))
+            finish()
+        }, if (allGranted) 3000 else 5000) // Delay lebih lama jika izin ditolak untuk beri waktu baca
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SplashScreen()
         }
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, HomeScreenActivity::class.java))
-            finish()
-        }, 3000) // Delay 3 detik sebelum pindah ke home
+        val permissions = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14+
+            permissions.add(Manifest.permission.USE_EXACT_ALARM)
+        }
+
+        if (permissions.isNotEmpty()) {
+            requestPermissionsLauncher.launch(permissions.toTypedArray())
+        } else {
+            Handler(Looper.getMainLooper()).postDelayed({
+                startActivity(Intent(this, HomeScreenActivity::class.java))
+                finish()
+            }, 3000)
+        }
     }
 }
 
@@ -47,9 +73,9 @@ fun SplashScreen() {
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF2A41BE), // Biru muda
-                        Color(0xFF2AB8D0), // Kuning muda
-                        Color(0xFF9B3CBD) // Biru Muda
+                        Color(0xFF2A41BE),
+                        Color(0xFF2AB8D0),
+                        Color(0xFF9B3CBD)
                     )
                 )
             )
@@ -66,9 +92,7 @@ fun SplashScreen() {
                 contentDescription = "App Logo",
                 modifier = Modifier.size(233.dp)
             )
-
             Spacer(modifier = Modifier.height(2.dp))
-
             Text(
                 text = "My Quran App",
                 color = Color.White,
@@ -77,23 +101,19 @@ fun SplashScreen() {
                     letterSpacing = 1.5.sp
                 )
             )
-
             Spacer(modifier = Modifier.height(4.dp))
-
             Text(
                 text = "Dendi Setiawan",
                 color = Color.White,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
-
-        // Gambar masjid di bagian bawah layar, memenuhi kiri & kanan
         Image(
-            painter = painterResource(id = R.drawable.ui), // Pastikan gambar ada di drawable
+            painter = painterResource(id = R.drawable.ui),
             contentDescription = "Masjid",
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.BottomCenter) // Perbaikan di sini!
+                .align(Alignment.BottomCenter)
         )
     }
 }
