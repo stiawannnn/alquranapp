@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,13 +15,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.ui.saveLastSeen
 import com.example.utsquranappq.viewmodel.SurahDetailViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
@@ -50,7 +55,6 @@ fun SurahDetailScreen(
     var showVoiceDialog by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    var targetAyahNumber by remember { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     var currentPlayingAyah by remember { mutableStateOf<Int?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -62,7 +66,7 @@ fun SurahDetailScreen(
 
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex }
-            .debounce(500) // Debounce untuk mencegah penyimpanan berulang saat scroll cepat
+            .debounce(500)
             .collect { index ->
                 if (index >= 0 && surahDetail.isNotEmpty()) {
                     val ayah = surahDetail.groupBy { it.numberInSurah }.keys.toList().getOrNull(index)
@@ -71,18 +75,6 @@ fun SurahDetailScreen(
                     }
                 }
             }
-    }
-
-    LaunchedEffect(targetAyahNumber) {
-        targetAyahNumber?.let { ayahNumber ->
-            val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
-            val index = ayahKeys.indexOf(ayahNumber)
-            if (index != -1) {
-                listState.scrollToItem(index + 1)
-            } else {
-                snackbarHostState.showSnackbar("Ayat nomor $ayahNumber tidak ditemukan")
-            }
-        }
     }
 
     LaunchedEffect(listState) {
@@ -111,14 +103,15 @@ fun SurahDetailScreen(
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
+                        onDismissRequest = { menuExpanded = false },
+                        modifier = Modifier.background(Color(0xFF1E1E1E))
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Pilih Suara") },
+                            text = { Text("Pilih Suara", color = Color.White) },
                             onClick = { showVoiceDialog = true; menuExpanded = false }
                         )
                         DropdownMenuItem(
-                            text = { Text("Search Nomor Ayat") },
+                            text = { Text("Cari Nomor Ayat", color = Color.White) },
                             onClick = { showSearchDialog = true; menuExpanded = false }
                         )
                     }
@@ -197,8 +190,27 @@ fun SurahDetailScreen(
 
         if (showSearchDialog) {
             SearchAyahDialog(
+                surahNumber = surahNumber,
+                viewModel = viewModel,
                 onDismiss = { showSearchDialog = false },
-                onSearch = { targetAyahNumber = it.toIntOrNull() }
+                onSearch = { targetAyahNumber ->
+                    coroutineScope.launch {
+                        viewModel.fetchSurahDetail(surahNumber, reset = true, targetAyahNumber = targetAyahNumber.toIntOrNull())
+                        while (viewModel.isLoading.value) {
+                            delay(100)
+                        }
+                        val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
+                        val index = ayahKeys.indexOf(targetAyahNumber.toIntOrNull())
+                        if (index != -1) {
+                            listState.scrollToItem(index + 1)
+                            Log.d("SurahSearch", "Scrolled to Ayah: $targetAyahNumber, Index: $index")
+                        } else {
+                            snackbarHostState.showSnackbar("Ayat nomor $targetAyahNumber tidak ditemukan")
+                            Log.e("SurahSearch", "Ayah $targetAyahNumber not found in Surah $surahNumber")
+                        }
+                        showSearchDialog = false
+                    }
+                }
             )
         }
     }
@@ -225,4 +237,64 @@ fun ErrorView(errorMessage: String?) = Box(modifier = Modifier.fillMaxSize(), co
 @Composable
 fun EmptyView() = Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     Text("Tidak ada data ayat", style = MaterialTheme.typography.bodyLarge)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchAyahDialog(
+    surahNumber: Int,
+    viewModel: SurahDetailViewModel,
+    onDismiss: () -> Unit,
+    onSearch: (String) -> Unit
+) {
+    var ayahNumber by remember { mutableStateOf("") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF1E1E1E),
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Cari Nomor Ayat", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = ayahNumber,
+                    onValueChange = { ayahNumber = it },
+                    label = { Text("Nomor Ayat", color = Color.White) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF03A9F4),
+                        unfocusedBorderColor = Color.Gray,
+                        cursorColor = Color.White
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Batal", color = Color.White)
+                    }
+                    TextButton(
+                        onClick = { if (ayahNumber.isNotEmpty()) onSearch(ayahNumber) },
+                        enabled = ayahNumber.isNotEmpty()
+                    ) {
+                        Text("Cari", color = if (ayahNumber.isNotEmpty()) Color.White else Color.Gray)
+                    }
+                }
+            }
+        }
+    }
 }

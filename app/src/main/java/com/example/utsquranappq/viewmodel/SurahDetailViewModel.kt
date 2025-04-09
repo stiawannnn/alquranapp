@@ -1,5 +1,6 @@
 package com.example.utsquranappq.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.utsquranappq.model.AyahEdition
@@ -24,11 +25,11 @@ class SurahDetailViewModel : ViewModel() {
     val selectedQari: StateFlow<String?> = _selectedQari
 
     private var currentPage = 0
-    private val pageSize = 7 // Memuat 10 ayat per halaman
+    private val pageSize = 7 // Memuat 7 ayat per halaman
     private var totalAyahs = 0
     private var surahNumberLoaded = -1
 
-    fun fetchSurahDetail(surahNumber: Int, reset: Boolean = false) {
+    fun fetchSurahDetail(surahNumber: Int, reset: Boolean = false, targetAyahNumber: Int? = null) {
         if (reset || surahNumber != surahNumberLoaded) {
             currentPage = 0
             _surahDetail.value = emptyList()
@@ -44,7 +45,19 @@ class SurahDetailViewModel : ViewModel() {
                 if (response.code == 200) {
                     val ayahs = response.data.ayahs
                     totalAyahs = ayahs.size
-                    val startIndex = currentPage * pageSize
+                    Log.d("SurahDetail", "Surah $surahNumber fetched: $totalAyahs ayahs")
+
+                    val startIndex = if (targetAyahNumber != null) {
+                        // Hitung halaman yang berisi ayat target
+                        val targetPage = (targetAyahNumber - 1) / pageSize
+                        currentPage = targetPage
+                        val calculatedStart = targetPage * pageSize
+                        Log.d("SurahDetail", "Jumping to page $targetPage for ayah $targetAyahNumber, startIndex: $calculatedStart")
+                        calculatedStart
+                    } else {
+                        currentPage * pageSize
+                    }
+
                     val endIndex = minOf(startIndex + pageSize, totalAyahs)
                     val ayahList = mutableListOf<AyahEdition>()
 
@@ -53,15 +66,24 @@ class SurahDetailViewModel : ViewModel() {
                         val editionResponse = repository.getAyahEditions(reference, editions)
                         if (editionResponse.code == 200) {
                             ayahList.addAll(editionResponse.data)
+                        } else {
+                            Log.w("SurahDetail", "Failed to load editions for $reference: ${editionResponse.status}")
                         }
                     }
-                    _surahDetail.value = _surahDetail.value + ayahList
+
+                    if (reset || targetAyahNumber != null) {
+                        _surahDetail.value = ayahList
+                    } else {
+                        _surahDetail.value = _surahDetail.value + ayahList
+                    }
                     currentPage++
+                    Log.d("SurahDetail", "Loaded ayahs from $startIndex to $endIndex, current size: ${_surahDetail.value.size}")
                 } else {
                     _error.value = "Failed to load Surah $surahNumber: ${response.status}"
                 }
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message}"
+                Log.e("SurahDetail", "Exception: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }

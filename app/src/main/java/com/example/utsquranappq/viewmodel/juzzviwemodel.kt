@@ -1,5 +1,6 @@
 package com.example.utsquranappq.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.utsquranappq.model.AyahEdition
@@ -25,7 +26,12 @@ class JuzViewModel : ViewModel() {
     private var totalAyahs = 0
     private var juzNumberLoaded = -1
 
-    fun fetchJuzDetail(juzNumber: Int, reset: Boolean = false) {
+    fun fetchJuzDetail(
+        juzNumber: Int,
+        reset: Boolean = false,
+        targetSurahNumber: Int? = null,
+        targetAyahNumber: Int? = null
+    ) {
         if (reset || juzNumber != juzNumberLoaded) {
             currentPage = 0
             _juzDetail.value = emptyList()
@@ -41,7 +47,28 @@ class JuzViewModel : ViewModel() {
                 if (response.code == 200) {
                     val ayahs = response.data.ayahs
                     totalAyahs = ayahs.size
-                    val startIndex = currentPage * pageSize
+                    Log.d("JuzDetail", "Juz $juzNumber fetched: $totalAyahs ayahs")
+
+                    val startIndex = if (targetSurahNumber != null && targetAyahNumber != null) {
+                        val targetIndex = ayahs.indexOfFirst {
+                            it.surah.number == targetSurahNumber && it.numberInSurah == targetAyahNumber
+                        }
+                        if (targetIndex != -1) {
+                            // Pastikan ayat target berada di tengah halaman (jika memungkinkan)
+                            val adjustedStart = maxOf(0, targetIndex - (pageSize / 2))
+                            val targetPage = adjustedStart / pageSize
+                            currentPage = targetPage
+                            val calculatedStart = targetPage * pageSize
+                            Log.d("JuzDetail", "Jumping to page $targetPage for Surah $targetSurahNumber, Ayah $targetAyahNumber, startIndex: $calculatedStart")
+                            calculatedStart
+                        } else {
+                            Log.w("JuzDetail", "Target Surah $targetSurahNumber, Ayah $targetAyahNumber not found, loading normally")
+                            currentPage * pageSize
+                        }
+                    } else {
+                        currentPage * pageSize
+                    }
+
                     val endIndex = minOf(startIndex + pageSize, totalAyahs)
                     val ayahList = mutableListOf<AyahEdition>()
 
@@ -50,15 +77,23 @@ class JuzViewModel : ViewModel() {
                         val editionResponse = repository.getAyahEditions(reference, editions)
                         if (editionResponse.code == 200) {
                             ayahList.addAll(editionResponse.data)
+                        } else {
+                            Log.w("JuzDetail", "Failed to load editions for $reference: ${editionResponse.status}")
                         }
                     }
-                    _juzDetail.value = _juzDetail.value + ayahList
+                    if (reset || (targetSurahNumber != null && targetAyahNumber != null)) {
+                        _juzDetail.value = ayahList
+                    } else {
+                        _juzDetail.value = _juzDetail.value + ayahList
+                    }
                     currentPage++
+                    Log.d("JuzDetail", "Loaded ayahs from $startIndex to $endIndex, current size: ${_juzDetail.value.size}")
                 } else {
                     _error.value = "Failed to load Juz $juzNumber: ${response.status}"
                 }
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message}"
+                Log.e("JuzDetail", "Exception: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }
