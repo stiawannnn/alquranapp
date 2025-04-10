@@ -27,6 +27,8 @@ import com.example.utsquranappq.ui.saveLastSeen
 import com.example.utsquranappq.viewmodel.SurahDetailViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,10 +62,30 @@ fun SurahDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     val audioManager = remember { AudioManager() }
 
+    // Ambil targetAyahNumber dari argumen navigasi
+    val targetAyahNumber = navController.currentBackStackEntry?.arguments?.getString("ayah")?.toIntOrNull()
+    Log.d("SurahDetailScreen", "Target Ayah Number: $targetAyahNumber")
+
+    // Fetch data
     LaunchedEffect(surahNumber) {
+        Log.d("SurahDetailScreen", "Fetching Surah $surahNumber")
         viewModel.fetchSurahDetail(surahNumber, reset = true)
     }
 
+    // Scroll ke ayat target setelah data dimuat
+    LaunchedEffect(surahDetail, targetAyahNumber) {
+        if (targetAyahNumber != null && surahDetail.isNotEmpty()) {
+            val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
+            val index = ayahKeys.indexOf(targetAyahNumber)
+            if (index != -1) {
+                snapshotFlow { listState.isScrollInProgress }
+                    .filter { !it } // Tunggu scroll selesai
+                    .first()
+                listState.scrollToItem(index + 1)
+                Log.d("SurahDetailScreen", "Scrolled to Ayah: $targetAyahNumber, Index: $index")
+            }
+        }
+    }
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex }
             .debounce(500)

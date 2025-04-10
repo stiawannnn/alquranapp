@@ -79,11 +79,13 @@ fun SurahHeader(
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Image(
-                painter = painterResource(id = R.drawable.bismillah),
-                contentDescription = "Bismillah",
-                modifier = Modifier.size(223.dp)
-            )
+            if (currentSurah?.number != 1 && currentSurah?.number != 9) {
+                Image(
+                    painter = painterResource(id = R.drawable.bismillah),
+                    contentDescription = "Bismillah",
+                    modifier = Modifier.size(223.dp)
+                )
+            }
         }
     }
 }

@@ -48,6 +48,7 @@ class HomeScreenActivity : ComponentActivity() {
                         val juzNumber = backStackEntry.arguments?.getString("juzNumber")?.toIntOrNull()
                         JuzDetailScreen(juzNumber = juzNumber, navController = navController)
                     }
+                    composable("bookmark") { BookmarkScreen(navController) }
                 }
             }
         }

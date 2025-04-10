@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
@@ -22,9 +23,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.AyahEdition
+import com.example.utsquranappq.ui.BookmarkViewModelFactory
 import com.example.utsquranappq.utiils.parseTajweedText
+import com.example.utsquranappq.viewmodel.BookmarkViewModel
 
 @Composable
 fun SurahCardOnlyText(
@@ -38,10 +42,13 @@ fun SurahCardOnlyText(
     currentPlayingAyah: Int?,
     onPlayAll: (Int) -> Unit // Memulai Play All dengan startIndex
 ) {
+    val context = LocalContext.current
     var currentAyahPlaying by remember { mutableStateOf<Int?>(null) } // Pemutaran individu
     var expanded by remember { mutableStateOf(false) } // DropdownMenu
     var selectedAyahNumber by remember { mutableStateOf<Int?>(null) } // Ayat yang diklik
     val mediaPlayer = remember { MediaPlayer() } // Untuk pemutaran individu
+    val juzNumber = ayahs.firstOrNull()?.juz
+    val viewModel: BookmarkViewModel = viewModel(factory = BookmarkViewModelFactory(context))
 
     DisposableEffect(Unit) {
         onDispose {
@@ -77,6 +84,7 @@ fun SurahCardOnlyText(
                 val translation = editions.find { it.edition.identifier == "id.indonesian" }?.text ?: ""
                 val transliteration = editions.find { it.edition.identifier == "en.transliteration" }?.text ?: ""
                 val ayahNumber = editions.firstOrNull()?.numberInSurah ?: 0
+                val surahNumber = editions.firstOrNull()?.surah?.number ?: 0
                 val audioAyah = editions.find {
                     it.audio != null && (selectedQari == null || it.edition.identifier == selectedQari)
                 } ?: editions.find { it.audio != null }
@@ -195,7 +203,7 @@ fun SurahCardOnlyText(
                     ) {
                         audioAyah?.audio?.let { audioUrl ->
                             DropdownMenuItem(
-                                text = { Text("Play Audio", color = Color.White) },
+                                text = { Text("Putar Audio", color = Color.White) },
                                 onClick = {
                                     if (currentAyahPlaying != ayahNumber) {
                                         audioManager.stop()
@@ -207,7 +215,7 @@ fun SurahCardOnlyText(
                                             mediaPlayer.start()
                                             currentAyahPlaying = ayahNumber
                                         } catch (e: Exception) {
-                                            Log.e("SurahCardOnlyText", "Error playing audio: ${e.message}")
+                                            Log.e("SurahCardOnlyText", "Error memutar audio: ${e.message}")
                                         }
                                         mediaPlayer.setOnCompletionListener {
                                             currentAyahPlaying = null
@@ -219,7 +227,7 @@ fun SurahCardOnlyText(
 
                             if (currentAyahPlaying == ayahNumber && mediaPlayer.isPlaying) {
                                 DropdownMenuItem(
-                                    text = { Text("Pause Audio", color = Color.White) },
+                                    text = { Text("Jeda Audio", color = Color.White) },
                                     onClick = {
                                         mediaPlayer.pause()
                                         expanded = false
@@ -229,7 +237,7 @@ fun SurahCardOnlyText(
 
                             if (currentAyahPlaying == ayahNumber && !mediaPlayer.isPlaying) {
                                 DropdownMenuItem(
-                                    text = { Text("Resume Audio", color = Color.White) },
+                                    text = { Text("Lanjutkan Audio", color = Color.White) },
                                     onClick = {
                                         mediaPlayer.start()
                                         expanded = false
@@ -239,7 +247,7 @@ fun SurahCardOnlyText(
 
                             if (currentAyahPlaying == ayahNumber) {
                                 DropdownMenuItem(
-                                    text = { Text("Stop Audio", color = Color.White) },
+                                    text = { Text("Hentikan Audio", color = Color.White) },
                                     onClick = {
                                         mediaPlayer.stop()
                                         mediaPlayer.reset()
@@ -250,14 +258,14 @@ fun SurahCardOnlyText(
                             }
                         } ?: run {
                             DropdownMenuItem(
-                                text = { Text("No Audio Available", color = Color.Gray) },
+                                text = { Text("Tidak Ada Audio", color = Color.Gray) },
                                 onClick = { expanded = false },
                                 enabled = false
                             )
                         }
 
                         DropdownMenuItem(
-                            text = { Text("Play All Audio", color = Color.White) },
+                            text = { Text("Putar Semua Audio", color = Color.White) },
                             onClick = {
                                 if (!audioManager.isPlayingAll.value && selectedQari != null) {
                                     mediaPlayer.stop()
@@ -273,7 +281,7 @@ fun SurahCardOnlyText(
 
                         if (audioManager.isPlayingAll.value && !audioManager.isPaused.value) {
                             DropdownMenuItem(
-                                text = { Text("Pause All Audio", color = Color.White) },
+                                text = { Text("Jeda Semua Audio", color = Color.White) },
                                 onClick = {
                                     audioManager.pause()
                                     expanded = false
@@ -283,7 +291,7 @@ fun SurahCardOnlyText(
 
                         if (audioManager.isPlayingAll.value && audioManager.isPaused.value) {
                             DropdownMenuItem(
-                                text = { Text("Resume All Audio", color = Color.White) },
+                                text = { Text("Lanjutkan Semua Audio", color = Color.White) },
                                 onClick = {
                                     audioManager.resume()
                                     expanded = false
@@ -293,13 +301,33 @@ fun SurahCardOnlyText(
 
                         if (audioManager.isPlayingAll.value) {
                             DropdownMenuItem(
-                                text = { Text("Stop All Audio", color = Color.White) },
+                                text = { Text("Hentikan Semua Audio", color = Color.White) },
                                 onClick = {
                                     audioManager.stop()
                                     expanded = false
                                 }
                             )
                         }
+
+                        // Opsi Bookmark
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (viewModel.isBookmarked(surahNumber, ayahNumber))
+                                        "Hapus Bookmark"
+                                    else "Tambah Bookmark",
+                                    color = Color.White
+                                )
+                            },
+                            onClick = {
+                                if (viewModel.isBookmarked(surahNumber, ayahNumber)) {
+                                    viewModel.removeBookmark(surahNumber, ayahNumber)
+                                } else {
+                                    viewModel.addBookmark(surahNumber, ayahNumber, surahName,juzNumber)
+                                }
+                                expanded = false
+                            }
+                        )
                     }
                 }
             }

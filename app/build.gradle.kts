@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-kapt") // Tambahkan ini
 }
 
 android {
@@ -44,7 +45,7 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.14")
-    implementation("androidx.work:work-runtime-ktx:2.9.1") // Versi terbaru
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation(libs.androidx.core.ktx)
     implementation("androidx.media:media:1.7.0")
     implementation(libs.androidx.navigation.compose)
@@ -64,4 +65,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Tambahkan dependensi Room
+    implementation(libs.androidx.room.runtime)
+    kapt(libs.androidx.room.compiler) // Ganti dari annotationProcessor ke kapt
+    implementation(libs.androidx.room.ktx)
 }
