@@ -66,22 +66,40 @@ fun JuzDetailScreen(
     }
 
     LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemIndex to listState.layoutInfo.visibleItemsInfo }
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
             .debounce(500)
-            .collect { (firstVisibleIndex, visibleItems) ->
-                if (firstVisibleIndex >= 0 && juzDetail.isNotEmpty()) {
-                    val grouped = juzDetail.groupBy { it.surah.number }
-                    val surahEntries = grouped.entries.toList()
-                    val lastVisibleIndex = visibleItems.lastOrNull()?.index ?: firstVisibleIndex
-                    val entry = surahEntries.getOrNull(lastVisibleIndex)
-                    if (entry != null) {
-                        val surahNumber = entry.key
-                        val lastAyah = entry.value.lastOrNull()?.numberInSurah
-                        if (lastAyah != null) {
-                            saveLastSeen(context, juz = juzNumber, juzSurah = surahNumber, juzAyah = lastAyah)
-                            Log.d("JuzScroll", "Saved Last Seen - Juz: $juzNumber, Surah: $surahNumber, Ayah: $lastAyah")
-                        }
-                    }
+            .collect { visibleItems ->
+                if (juzDetail.isEmpty() || visibleItems.isEmpty()) return@collect
+
+                val grouped = juzDetail.groupBy { it.surah.number }
+                val groupedEntries = grouped.entries.toList()
+
+                val lastVisibleItemInfo = visibleItems.lastOrNull() ?: return@collect
+                val index = lastVisibleItemInfo.index.coerceIn(groupedEntries.indices)
+                val entry = groupedEntries.getOrNull(index) ?: return@collect
+                val surahNumber = entry.key
+                val ayahs = entry.value
+
+                val visibleHeight = lastVisibleItemInfo.size - lastVisibleItemInfo.offset
+                val fractionVisible = visibleHeight.toFloat() / lastVisibleItemInfo.size.toFloat()
+
+                val targetAyah = if (fractionVisible > 0.6f) {
+                    ayahs.lastOrNull()
+                } else {
+                    ayahs.firstOrNull()
+                }
+
+                targetAyah?.let { ayah ->
+                    saveLastSeen(
+                        context,
+                        juz = juzNumber,
+                        juzSurah = surahNumber,
+                        juzAyah = ayah.numberInSurah
+                    )
+                    Log.d(
+                        "JuzScroll",
+                        "Saved Last Seen (Fraksional) - Juz: $juzNumber, Surah: $surahNumber, Ayah: ${ayah.numberInSurah}, Fraksi: ${"%.2f".format(fractionVisible)}"
+                    )
                 }
             }
     }
@@ -96,13 +114,29 @@ fun JuzDetailScreen(
                 }
             }
     }
+    DisposableEffect(navController) {
+        val callback = NavController.OnDestinationChangedListener { _, destination, _ ->
+            if (destination.route != "juz_detail/$juzNumber") {
+                audioManager.stop()
+                Log.d("JuzDetailScreen", "Navigated away, stopping audio")
+            }
+        }
+        navController.addOnDestinationChangedListener(callback)
+        onDispose {
+            navController.removeOnDestinationChangedListener(callback)
+            audioManager.release()
+            Log.d("JuzDetailScreen", "Disposed, releasing audio resources")
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Juz $juzNumber") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        audioManager.stop()
+                        navController.popBackStack() }) {
                         Icon(painter = painterResource(id = R.drawable.arrowback), contentDescription = "Kembali")
                     }
                 },
@@ -136,8 +170,8 @@ fun JuzDetailScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF100F0F),
                     titleContentColor = Color(0xFFFDFAFA),
-                    navigationIconContentColor = Color(0xFF472694),
-                    actionIconContentColor = Color(0xFF03A9F4)
+                    navigationIconContentColor = Color(0xFF9516A8),
+                    actionIconContentColor = Color(0xFF9516A8)
                 )
             )
         },

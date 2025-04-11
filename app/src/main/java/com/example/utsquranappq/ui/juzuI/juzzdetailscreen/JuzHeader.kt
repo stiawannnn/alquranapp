@@ -28,12 +28,17 @@ import com.example.utsquranappq.utiils.getTranslation
 
 @Composable
 fun SurahHeaderBox(
+    surahNumber: Int,
     englishName: String,
     englishTranslation: String,
     revelationType: String,
     numberOfAyahs: Int,
 ) {
-    val (surahIndo, meaningIndo, revelationIndo) = getTranslation(englishName, englishTranslation, revelationType)
+    val (surahIndo, meaningIndo, revelationIndo) = getTranslation(
+        englishName,
+        englishTranslation,
+        revelationType
+    )
 
     Box(
         modifier = Modifier
@@ -82,13 +87,24 @@ fun SurahHeaderBox(
                 .align(Alignment.BottomCenter),
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.bismillah),
-                contentDescription = "Bismillah",
-                modifier = Modifier
-                    .size(200.dp) // Sesuaikan ukuran jika perlu
-                    .padding(top = 88.dp)
-            )
+
+            // Bismillah hanya ditampilkan jika bukan Surah Al-Fatihah (nomor 1)
+            if (surahNumber != 1) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.bismillah),
+                        contentDescription = "Bismillah",
+                        modifier = Modifier
+                            .size(200.dp)
+                            .padding(top = 88.dp)
+                    )
+                }
+            }
         }
     }
 }

@@ -65,7 +65,8 @@ fun SurahCardOnlyText(
             englishName = surahName,
             englishTranslation = englishTranslation,
             revelationType = revelationType,
-            numberOfAyahs = numberOfAyahs
+            numberOfAyahs = numberOfAyahs,
+            surahNumber = ayahs.firstOrNull()?.surah?.number ?: 0
         )
 
         Spacer(modifier = Modifier.height(12.dp))

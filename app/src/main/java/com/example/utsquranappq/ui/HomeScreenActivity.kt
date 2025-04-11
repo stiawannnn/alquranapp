@@ -44,6 +44,7 @@ import com.example.utsquranappq.ui.surahui.surahscreen.SurahTab
 import com.example.utsquranappq.utiils.getTranslation
 import com.example.utsquranappq.work.QuranReminderReceiver
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -131,7 +132,12 @@ fun TopBar(
                 } else Text("Al-Qur'an", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
             },
             navigationIcon = { IconButton(onClick = onMenuClick) { Icon(Icons.Filled.Menu, "Menu", tint = Color.White) } },
-            actions = { IconButton(onClick = { isSearching = !isSearching }) { Icon(Icons.Filled.Search, "Search", tint = Color.White) } },
+            actions = { IconButton(onClick = { isSearching = !isSearching })
+
+            {
+                Icon(Icons.Filled.Search, "Search", tint = Color(0xFFDDDADE)) }
+
+                      },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F0E2A))
         )
         if (isSearching && showResults) {
@@ -307,8 +313,13 @@ fun GreetingSection(
 
 @Composable
 fun LastSeenSection(
-    lastSurah: Int, lastAyah: Int, lastJuz: Int, lastJuzSurah: Int, lastJuzAyah: Int,
-    surahList: List<Surah>, navController: NavController
+    lastSurah: Int,
+    lastAyah: Int,
+    lastJuz: Int,
+    lastJuzSurah: Int,
+    lastJuzAyah: Int,
+    surahList: List<Surah>,
+    navController: NavController
 ) {
     var currentTime by remember { mutableStateOf(getCurrentTime()) }
 
@@ -321,12 +332,14 @@ fun LastSeenSection(
 
     val lastSeenText = when {
         lastSurah != -1 && lastAyah != -1 -> {
-            val surahName = surahList.find { it.number == lastSurah }?.let { getTranslation(it.englishName, "", "").first } ?: "Unknown"
+            val surahName = surahList.find { it.number == lastSurah }
+                ?.let { getTranslation(it.englishName, "", "").first } ?: "Unknown"
             "$surahName - Ayat $lastAyah"
         }
         lastJuz != -1 && lastJuzSurah != -1 && lastJuzAyah != -1 -> {
-            val surahName = surahList.find { it.number == lastJuzSurah }?.let { getTranslation(it.englishName, "", "").first } ?: "Unknown"
-            "Juz $lastJuz - $surahName, Ayat $lastJuzAyah"
+            val surahName = surahList.find { it.number == lastJuzSurah }
+                ?.let { getTranslation(it.englishName, "", "").first } ?: "Unknown"
+            "Juz $lastJuz \n$surahName"// untuk sementara sampai fix bug
         }
         else -> "Belum ada riwayat"
     }
@@ -347,26 +360,83 @@ fun LastSeenSection(
                     lastJuz != -1 -> navController.navigate("juz_detail/$lastJuz")
                 }
             }
-            .padding(16.dp)
+            .padding(20.dp)
     ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(painter = painterResource(id = R.drawable.prayicon), contentDescription = "Book")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Last Read", color = Color.White, fontWeight = FontWeight.Medium)
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "Terakhir Dibaca",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = lastSeenText,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.3.sp
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.15f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clickable {  when {
+                                lastSurah != -1 -> navController.navigate("surahDetail/$lastSurah")
+                                lastJuz != -1 -> navController.navigate("juz_detail/$lastJuz")
+                            } }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Lanjutkan",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            painter = painterResource(id = R.drawable.arrow1),
+                            contentDescription = "Icon Lanjutkan",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(lastSeenText, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(currentTime, color = Color.White, fontSize = 14.sp)
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Jam di bawah
+            Text(
+                text = currentTime,
+                color = Color.White.copy(alpha = 16f),
+                fontSize = 14.sp,
+                modifier = Modifier.align(Alignment.Start)
+            )
         }
     }
 }
 
+
+
+
 fun getCurrentTime(): String {
-    val locale = Locale.getDefault()
-    val timeZone = TimeZone.getDefault()
-    val dateFormat = java.text.SimpleDateFormat("EEEE, dd MMMM yyyy hh:mm:ss a", locale)
+    val locale = Locale("id", "ID")
+    val timeZone = TimeZone.getTimeZone("Asia/Jakarta")
+    val dateFormat = SimpleDateFormat("EEEE, dd MMMM yyyy - HH:mm:ss 'WIB'", locale)
     dateFormat.timeZone = timeZone
     return dateFormat.format(Date())
 }
@@ -409,8 +479,8 @@ fun BottomNavigationBar(navController: NavController) {
     NavigationBar(containerColor = Color(0xFF150D23)) {
         val items = listOf("Jadwal", "Qiblat", "Quran", "Bookmark", "Tajweed")
         val icons = listOf(
-            R.drawable.prayicon, R.drawable.calendar,
-            R.drawable.qur5, R.drawable.prayicon, R.drawable.prayicon
+            R.drawable.sholat, R.drawable.navigasi,
+            R.drawable.qur5, R.drawable.bookmarks, R.drawable.tajweed
         )
         var selectedItem by remember { mutableStateOf(2) }
 

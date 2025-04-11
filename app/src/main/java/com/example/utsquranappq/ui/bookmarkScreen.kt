@@ -1,6 +1,7 @@
 package com.example.utsquranappq.ui
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,15 +22,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.Bookmark
+import com.example.utsquranappq.model.Surah
+import com.example.utsquranappq.utiils.getTranslation
 import com.example.utsquranappq.viewmodel.BookmarkViewModel
 
 @Composable
 fun BookmarkScreen(navController: NavController? = null) {
     val context = LocalContext.current
     val viewModel: BookmarkViewModel = viewModel(factory = BookmarkViewModelFactory(context))
+    val surahViewModel: SurahViewModel = viewModel() // Tambah SurahViewModel
     val bookmarks by viewModel.bookmarks.collectAsState()
+    val surahList by surahViewModel.surahList.collectAsState()
 
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -48,7 +54,7 @@ fun BookmarkScreen(navController: NavController? = null) {
     ) {
         Text(
             text = "Daftar Bookmark",
-            fontSize = 24.sp,
+            fontSize = 23.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -64,7 +70,7 @@ fun BookmarkScreen(navController: NavController? = null) {
         } else {
             LazyColumn {
                 items(bookmarks) { bookmark ->
-                    BookmarkItem(bookmark, navController, viewModel::removeBookmark)
+                    BookmarkItem(bookmark, navController, viewModel::removeBookmark, surahList)
                 }
             }
         }
@@ -72,8 +78,21 @@ fun BookmarkScreen(navController: NavController? = null) {
 }
 
 @Composable
-fun BookmarkItem(bookmark: Bookmark, navController: NavController?, onRemove: (Int, Int) -> Unit) {
-    var showDialog by remember { mutableStateOf(false) } // State untuk menampilkan dialog
+fun BookmarkItem(
+    bookmark: Bookmark,
+    navController: NavController?,
+    onRemove: (Int, Int) -> Unit,
+    surahList: List<Surah> // Tambah parameter surahList
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    // Terjemahkan nama surah ke bahasa Indonesia
+    val surah = surahList.find { it.number == bookmark.surahNumber }
+    val surahNameIndo = surah?.let {
+        val (surahIndo, _, _) = getTranslation(it.englishName, it.englishNameTranslation, it.revelationType)
+        Log.d("BookmarkItem", "EnglishName=${it.englishName}, TranslatedName=$surahIndo")
+        surahIndo
+    } ?: bookmark.surahName // Fallback ke bookmark.surahName jika surah tidak ditemukan
 
     Card(
         modifier = Modifier
@@ -102,7 +121,7 @@ fun BookmarkItem(bookmark: Bookmark, navController: NavController?, onRemove: (I
         ) {
             Column {
                 Text(
-                    text = "${bookmark.surahName}, Ayat ${bookmark.ayahNumber}",
+                    text = "$surahNameIndo, Ayat ${bookmark.ayahNumber}", // Gunakan surahNameIndo
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
@@ -115,9 +134,9 @@ fun BookmarkItem(bookmark: Bookmark, navController: NavController?, onRemove: (I
                     )
                 }
             }
-            IconButton(onClick = { showDialog = true }) { // Tampilkan dialog saat klik hapus
+            IconButton(onClick = { showDialog = true }) {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_delete),
+                    painter = painterResource(id = R.drawable.delete),
                     contentDescription = "Hapus Bookmark",
                     tint = Color.Red
                 )
@@ -125,16 +144,18 @@ fun BookmarkItem(bookmark: Bookmark, navController: NavController?, onRemove: (I
         }
     }
 
-    // Dialog konfirmasi hapus
     if (showDialog) {
+        Log.d("BookmarkItem", "Dialog Surah Name: $surahNameIndo, Ayat: ${bookmark.ayahNumber}")
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Konfirmasi Hapus") },
-            text = { Text("Apakah Anda yakin ingin menghapus bookmark ${bookmark.surahName}, Ayat ${bookmark.ayahNumber}?") },
+            text = {
+                Text("Apakah Anda yakin ingin menghapus bookmark $surahNameIndo, Ayat ${bookmark.ayahNumber}?")
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onRemove(bookmark.surahNumber, bookmark.ayahNumber) // Hapus bookmark
+                        onRemove(bookmark.surahNumber, bookmark.ayahNumber)
                         showDialog = false
                     }
                 ) {

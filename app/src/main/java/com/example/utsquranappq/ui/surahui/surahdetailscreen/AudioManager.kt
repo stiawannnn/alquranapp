@@ -7,7 +7,7 @@ import com.example.utsquranappq.model.AyahEdition
 import kotlinx.coroutines.delay
 
 class AudioManager {
-    private val mediaPlayer = MediaPlayer()
+    private var mediaPlayer: MediaPlayer? = MediaPlayer() // Ubah ke nullable untuk kontrol lebih baik
     val isPlayingAll = mutableStateOf(false)
     val isPaused = mutableStateOf(false)
 
@@ -30,31 +30,35 @@ class AudioManager {
                 }
                 for (ayah in audioAyahs) {
                     if (!isPlayingAll.value) break
-                    mediaPlayer.reset()
-                    mediaPlayer.setDataSource(ayah.audio!!)
-                    mediaPlayer.prepare()
-                    onAyahPlaying(ayah.numberInSurah)
-                    mediaPlayer.start()
-                    Log.d("PlayAllAudio", "Playing audio for ayah $ayahNumber (${ayah.edition.englishName})")
+                    mediaPlayer?.let { player ->
+                        player.reset()
+                        player.setDataSource(ayah.audio!!)
+                        player.prepare()
+                        onAyahPlaying(ayah.numberInSurah)
+                        player.start()
+                        Log.d("PlayAllAudio", "Playing audio for ayah $ayahNumber (${ayah.edition.englishName})")
 
-                    var pausedPosition = 0
-                    while (mediaPlayer.isPlaying || isPaused.value) {
-                        if (isPaused.value) {
-                            pausedPosition = mediaPlayer.currentPosition
-                            mediaPlayer.pause()
-                            while (isPaused.value && isPlayingAll.value) delay(100)
-                            if (!isPlayingAll.value) break
-                            mediaPlayer.seekTo(pausedPosition)
-                            mediaPlayer.start()
+                        var pausedPosition = 0
+                        while (player.isPlaying || isPaused.value) {
+                            if (isPaused.value) {
+                                pausedPosition = player.currentPosition
+                                player.pause()
+                                while (isPaused.value && isPlayingAll.value) delay(100)
+                                if (!isPlayingAll.value) break
+                                player.seekTo(pausedPosition)
+                                player.start()
+                            }
+                            delay(100)
                         }
-                        delay(100)
                     }
                 }
             }
         } catch (e: Exception) {
-            Log.e("PlayAllAudio", "Error playing all audio: ${e.message}")
+            Log.e("PlayAllAudio", "Error playing all audio: ${e.message}", e)
         } finally {
-            if (!isPaused.value) mediaPlayer.reset()
+            if (!isPaused.value) {
+                mediaPlayer?.reset()
+            }
             isPlayingAll.value = false
             isPaused.value = false
             onFinished()
@@ -63,28 +67,35 @@ class AudioManager {
 
     fun pause() {
         if (isPlayingAll.value && !isPaused.value) {
-            mediaPlayer.pause()
+            mediaPlayer?.pause()
             isPaused.value = true
         }
     }
 
     fun resume() {
         if (isPlayingAll.value && isPaused.value) {
-            mediaPlayer.start()
+            mediaPlayer?.start()
             isPaused.value = false
         }
     }
 
     fun stop() {
         if (isPlayingAll.value) {
-            mediaPlayer.stop()
-            mediaPlayer.reset()
+            mediaPlayer?.stop()
+            mediaPlayer?.reset()
             isPlayingAll.value = false
             isPaused.value = false
         }
     }
 
     fun release() {
-        mediaPlayer.release()
+        mediaPlayer?.let {
+            if (it.isPlaying) it.stop()
+            it.reset()
+            it.release()
+        }
+        mediaPlayer = null // Set ke null setelah release
+        isPlayingAll.value = false
+        isPaused.value = false
     }
 }

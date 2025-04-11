@@ -24,6 +24,7 @@ import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.ui.saveLastSeen
+import com.example.utsquranappq.utiils.getTranslation
 import com.example.utsquranappq.viewmodel.SurahDetailViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
@@ -52,6 +53,10 @@ fun SurahDetailScreen(
     val selectedQari by viewModel.selectedQari.collectAsState()
     val surahList by surahViewModel.surahList.collectAsState()
     val currentSurah = surahList.find { it.number == surahNumber }
+    val surahNameIndo = currentSurah?.let {
+        val (surahIndo, _, _) = getTranslation(it.englishName, it.englishNameTranslation, it.revelationType)
+        surahIndo
+    } ?: "Surah $surahNumber" // Fallback jika currentSurah null
 
     var menuExpanded by remember { mutableStateOf(false) }
     var showVoiceDialog by remember { mutableStateOf(false) }
@@ -109,11 +114,26 @@ fun SurahDetailScreen(
                 }
             }
     }
+    // Pantau navigasi keluar untuk menghentikan audio
+    DisposableEffect(navController) {
+        val callback = NavController.OnDestinationChangedListener { _, destination, _ ->
+            if (destination.route != "surahDetail/$surahNumber") {
+                audioManager.stop() // Hentikan audio saat navigasi keluar
+                Log.d("SurahDetailScreen", "Navigated away, stopping audio")
+            }
+        }
+        navController.addOnDestinationChangedListener(callback)
+        onDispose {
+            navController.removeOnDestinationChangedListener(callback)
+            audioManager.release() // Pastikan release saat dispose
+            Log.d("SurahDetailScreen", "Disposed, releasing audio resources")
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Surah ${currentSurah?.englishName ?: ""}") },
+                title = { Text("Surah $surahNameIndo") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(painter = painterResource(id = R.drawable.arrowback), contentDescription = "Kembali")
@@ -141,8 +161,8 @@ fun SurahDetailScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF020613),
                     titleContentColor = Color(0xFFECE7E7),
-                    actionIconContentColor = Color(0xFF673AB7),
-                    navigationIconContentColor = Color(0xFF9C27B0)
+                    actionIconContentColor = Color(0xFF9516A8),
+                    navigationIconContentColor = Color(0xFF9516A8)
                 )
             )
         },
@@ -238,7 +258,8 @@ fun SurahDetailScreen(
     }
 
     DisposableEffect(Unit) {
-        onDispose { audioManager.release() }
+        onDispose {
+            audioManager.release() }
     }
 }
 
