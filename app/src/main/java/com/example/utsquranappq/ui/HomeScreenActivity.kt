@@ -131,11 +131,23 @@ fun TopBar(
                     )
                 } else Text("Al-Qur'an", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
             },
-            navigationIcon = { IconButton(onClick = onMenuClick) { Icon(Icons.Filled.Menu, "Menu", tint = Color.White) } },
+            navigationIcon = {
+                IconButton(onClick = onMenuClick) {
+                    Image(
+                        painter = painterResource(id = R.drawable.setting), // ganti dengan nama resource lokal kamu
+                        contentDescription = "Menu",
+                        modifier = Modifier.size(23.dp) // ukuran bisa disesuaikan
+                    )
+                }
+            },
             actions = { IconButton(onClick = { isSearching = !isSearching })
 
             {
-                Icon(Icons.Filled.Search, "Search", tint = Color(0xFFDDDADE)) }
+                Image(
+                    painter = painterResource(id = R.drawable.search), // ganti dengan ikon lokal kamu
+                    contentDescription = "Search",
+                    modifier = Modifier.size(24.dp) // atur ukuran sesuai kebutuhan
+                ) }
 
                       },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F0E2A))
