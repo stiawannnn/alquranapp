@@ -26,7 +26,7 @@ import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.Bookmark
 import com.example.utsquranappq.model.Surah
-import com.example.utsquranappq.utiils.getTranslation
+import com.example.utsquranappq.utils.getTranslation
 import com.example.utsquranappq.viewmodel.BookmarkViewModel
 
 @Composable

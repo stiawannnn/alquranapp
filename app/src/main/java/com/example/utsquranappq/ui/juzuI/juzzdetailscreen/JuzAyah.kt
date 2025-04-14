@@ -27,7 +27,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.AyahEdition
 import com.example.utsquranappq.ui.BookmarkViewModelFactory
-import com.example.utsquranappq.utiils.parseTajweedText
+import com.example.utsquranappq.utils.parseTajweedText
 import com.example.utsquranappq.viewmodel.BookmarkViewModel
 
 @Composable

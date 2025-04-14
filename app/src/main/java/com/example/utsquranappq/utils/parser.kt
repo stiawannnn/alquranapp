@@ -1,4 +1,4 @@
-package com.example.utsquranappq.utiils
+package com.example.utsquranappq.utils
 
 import android.util.Log
 import androidx.compose.runtime.Composable

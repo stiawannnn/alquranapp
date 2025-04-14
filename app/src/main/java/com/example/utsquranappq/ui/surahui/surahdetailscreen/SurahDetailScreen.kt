@@ -23,8 +23,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
-import com.example.utsquranappq.ui.saveLastSeen
-import com.example.utsquranappq.utiils.getTranslation
+import com.example.utsquranappq.activity.homescreen.saveLastSeen
+import com.example.utsquranappq.utils.getTranslation
 import com.example.utsquranappq.viewmodel.SurahDetailViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
@@ -77,7 +77,6 @@ fun SurahDetailScreen(
         viewModel.fetchSurahDetail(surahNumber, reset = true)
     }
 
-    // Scroll ke ayat target setelah data dimuat
     LaunchedEffect(surahDetail, targetAyahNumber) {
         if (targetAyahNumber != null && surahDetail.isNotEmpty()) {
             val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
@@ -91,6 +90,7 @@ fun SurahDetailScreen(
             }
         }
     }
+
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex }
             .debounce(500)

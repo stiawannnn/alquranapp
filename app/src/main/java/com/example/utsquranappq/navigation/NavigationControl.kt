@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.utsquranappq.activity.HomeScreen
 import com.example.utsquranappq.ui.juzuI.juzzdetailscreen.JuzDetailScreen
 import com.example.utsquranappq.ui.*
 import com.example.utsquranappq.ui.juzuI.juzscreen.JuzTab

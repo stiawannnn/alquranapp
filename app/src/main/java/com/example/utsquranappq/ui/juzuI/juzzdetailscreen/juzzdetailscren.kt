@@ -25,8 +25,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.utsquranappq.R
+import com.example.utsquranappq.activity.homescreen.saveLastSeen
 import com.example.utsquranappq.repository.QuranRepository
-import com.example.utsquranappq.ui.saveLastSeen
 import com.example.utsquranappq.ui.surahui.surahdetailscreen.VoiceSelectionDialog
 import com.example.utsquranappq.viewmodel.JuzViewModel
 import kotlinx.coroutines.delay

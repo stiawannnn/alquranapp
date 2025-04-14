@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.AyahEdition
 import com.example.utsquranappq.model.Surah
-import com.example.utsquranappq.utiils.getTranslation
+import com.example.utsquranappq.utils.getTranslation
 
 //manggil fungsi di viewmodel untuk menerima parameter
 @Composable

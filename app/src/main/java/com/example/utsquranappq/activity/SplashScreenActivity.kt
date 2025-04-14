@@ -1,4 +1,4 @@
-package com.example.utsquranappq.ui
+package com.example.utsquranappq.activity
 
 import android.Manifest
 import android.annotation.SuppressLint

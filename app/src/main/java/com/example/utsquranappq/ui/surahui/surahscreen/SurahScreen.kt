@@ -24,7 +24,7 @@ import androidx.navigation.NavController
 import com.example.quranapp.viewmodel.SurahViewModel
 import com.example.utsquranappq.R
 import com.example.utsquranappq.model.Surah
-import com.example.utsquranappq.utiils.getTranslation
+import com.example.utsquranappq.utils.getTranslation
 
 @Composable
 fun SurahTab(

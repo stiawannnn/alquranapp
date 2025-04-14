@@ -1,4 +1,4 @@
-package com.example.utsquranappq.utiils
+package com.example.utsquranappq.utils
 
 // Terjemahan nama surah (dari English ke Indonesia)
 val surahTranslations = mapOf(

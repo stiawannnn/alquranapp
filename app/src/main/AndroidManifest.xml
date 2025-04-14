@@ -25,7 +25,7 @@
             android:exported="false" />
 
         <activity
-            android:name=".ui.SplashScreenActivity"
+            android:name=".activity.SplashScreenActivity"
             android:exported="true"
             android:theme="@style/Theme.Utsquranappq">
             <intent-filter>
