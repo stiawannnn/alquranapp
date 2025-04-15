@@ -109,7 +109,7 @@ fun JuzDetailScreen(
             .collect { visibleItems ->
                 val lastVisibleItem = visibleItems.lastOrNull()?.index ?: 0
                 val totalItems = juzDetail.groupBy { it.surah.number }.size
-                if (lastVisibleItem >= totalItems - 3 && viewModel.hasMoreAyahs() && !isLoading) {
+                if (lastVisibleItem >= totalItems - 1 && viewModel.hasMoreAyahs() && !isLoading) {
                     viewModel.fetchJuzDetail(juzNumber)
                 }
             }
