@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.utsquranappq.model.AyahEdition
 import com.example.utsquranappq.repository.QuranRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -25,7 +26,7 @@ class SurahDetailViewModel : ViewModel() {
     val selectedQari: StateFlow<String?> = _selectedQari
 
     private var currentPage = 0
-    private val pageSize = 7 // Memuat 7 ayat per halaman
+    private val pageSize = 11 // Memuat 7 ayat per halaman
     private var totalAyahs = 0
     private var surahNumberLoaded = -1
 
@@ -70,6 +71,7 @@ class SurahDetailViewModel : ViewModel() {
                             Log.w("SurahDetail", "Failed to load editions for $reference: ${editionResponse.status}")
                         }
                     }
+                    delay(500)
 
                     if (reset || targetAyahNumber != null) {
                         _surahDetail.value = ayahList

@@ -1,3 +1,4 @@
+
 package com.example.utsquranappq.ui.surahui.surahdetailscreen
 
 import android.util.Log
@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -77,16 +79,27 @@ fun SurahDetailScreen(
         viewModel.fetchSurahDetail(surahNumber, reset = true)
     }
 
-    LaunchedEffect(surahDetail, targetAyahNumber) {
-        if (targetAyahNumber != null && surahDetail.isNotEmpty()) {
+    // Gulir ke ayat target
+    val hasScrolled = rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(targetAyahNumber, isLoading, surahDetail) {
+        if (targetAyahNumber != null && !isLoading && !hasScrolled.value) {
             val ayahKeys = surahDetail.groupBy { it.numberInSurah }.keys.toList()
             val index = ayahKeys.indexOf(targetAyahNumber)
             if (index != -1) {
                 snapshotFlow { listState.isScrollInProgress }
-                    .filter { !it } // Tunggu scroll selesai
+                    .filter { !it }
                     .first()
-                listState.scrollToItem(index + 1)
-                Log.d("SurahDetailScreen", "Scrolled to Ayah: $targetAyahNumber, Index: $index")
+                listState.scrollToItem(index + 1) // +1 untuk SurahHeader
+                Log.d("SurahDetailScreen", "Menggulir ke Ayat: $targetAyahNumber, Indeks: $index")
+                hasScrolled.value = true
+                if (viewModel.hasMoreAyahs() && !isLoading) {
+                    Log.d("SurahDetailScreen", "Memuat halaman berikutnya setelah gulir ke ayat $targetAyahNumber")
+                    delay(500)
+                    viewModel.fetchSurahDetail(surahNumber!!, reset = false)
+                }
+            } else if (!isLoading && viewModel.hasMoreAyahs()) {
+                Log.d("SurahDetailScreen", "Ayat $targetAyahNumber belum dimuat, memuat halaman berikutnya")
+                viewModel.fetchSurahDetail(surahNumber!!, reset = false, targetAyahNumber = targetAyahNumber)
             }
         }
     }
@@ -109,11 +122,12 @@ fun SurahDetailScreen(
             .collect { visibleItems ->
                 val lastVisibleItem = visibleItems.lastOrNull()?.index ?: 0
                 val totalItems = surahDetail.groupBy { it.numberInSurah }.size
-                if (lastVisibleItem >= totalItems - 3 && viewModel.hasMoreAyahs() && !isLoading) {
+                if (lastVisibleItem >= totalItems - 1 && viewModel.hasMoreAyahs() && !isLoading) {
                     viewModel.fetchSurahDetail(surahNumber)
                 }
             }
     }
+
     // Pantau navigasi keluar untuk menghentikan audio
     DisposableEffect(navController) {
         val callback = NavController.OnDestinationChangedListener { _, destination, _ ->
@@ -259,7 +273,8 @@ fun SurahDetailScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            audioManager.release() }
+            audioManager.release()
+        }
     }
 }
 

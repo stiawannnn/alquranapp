@@ -1,5 +1,6 @@
 package com.example.utsquranappq.activity.homescreen
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -101,7 +102,7 @@ fun LastSeenSection(
         lastJuz != -1 && lastJuzSurah != -1 && lastJuzAyah != -1 -> {
             val surahName = surahList.find { it.number == lastJuzSurah }
                 ?.let { getTranslation(it.englishName, "", "").first } ?: "Unknown"
-            "Juz $lastJuz \n$surahName"// untuk sementara sampai fix bug
+            "Juz $lastJuz \n$surahName"
         }
         else -> "Belum ada riwayat"
     }
@@ -118,14 +119,16 @@ fun LastSeenSection(
             )
             .clickable {
                 when {
-                    lastSurah != -1 -> navController.navigate("surahDetail/$lastSurah")
+                    lastSurah != -1 && lastAyah != -1 -> {
+                        Log.d("LastSeenSection", "Navigating to surahDetail/$lastSurah?ayah=$lastAyah")
+                        navController.navigate("surahDetail/$lastSurah?ayah=$lastAyah")
+                    }
                     lastJuz != -1 -> navController.navigate("juz_detail/$lastJuz")
                 }
             }
             .padding(20.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -157,7 +160,10 @@ fun LastSeenSection(
                         modifier = Modifier
                             .clickable {
                                 when {
-                                    lastSurah != -1 -> navController.navigate("surahDetail/$lastSurah")
+                                    lastSurah != -1 && lastAyah != -1 -> {
+                                        Log.d("LastSeenSection", "Navigating to surahDetail/$lastSurah?ayah=$lastAyah")
+                                        navController.navigate("surahDetail/$lastSurah?ayah=$lastAyah")
+                                    }
                                     lastJuz != -1 -> navController.navigate("juz_detail/$lastJuz")
                                 }
                             }
@@ -183,10 +189,9 @@ fun LastSeenSection(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Jam di bawah
             Text(
                 text = currentTime,
-                color = Color.White.copy(alpha = 16f),
+                color = Color.White.copy(alpha = 0.6f),
                 fontSize = 14.sp,
                 modifier = Modifier.align(Alignment.Start)
             )

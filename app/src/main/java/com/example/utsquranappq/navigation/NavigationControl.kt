@@ -7,9 +7,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.utsquranappq.activity.HomeScreen
 import com.example.utsquranappq.ui.juzuI.juzzdetailscreen.JuzDetailScreen
 import com.example.utsquranappq.ui.*
@@ -34,11 +36,17 @@ class HomeScreenActivity : ComponentActivity() {
                     composable("home") { HomeScreen(navController) }
                     composable("info") { TajwidScreen() }
                     composable("sholat") { JadwalSholat(navController) }
-                    composable("bookmark") { BookmarkScreen() }
+                    composable("bookmark") { BookmarkScreen(navController) }
                     composable("Qiblat") { QiblaCompassScreen() }
                     composable("surahTab") { SurahTab(navController) }
-                    composable("surahDetail/{surahNumber}") { backStackEntry ->
-                        val surahNumber = backStackEntry.arguments?.getString("surahNumber")?.toIntOrNull()
+                    composable(
+                        route = "surahDetail/{surahNumber}?ayah={ayah}",
+                        arguments = listOf(
+                            navArgument("surahNumber") { type = NavType.IntType },
+                            navArgument("ayah") { type = NavType.StringType; nullable = true }
+                        )
+                    ) { backStackEntry ->
+                        val surahNumber = backStackEntry.arguments?.getInt("surahNumber")
                         Log.d("Navigation", "Navigating to SurahDetailScreen with number: $surahNumber")
                         SurahDetailScreen(surahNumber, navController)
                     }
@@ -49,7 +57,6 @@ class HomeScreenActivity : ComponentActivity() {
                         val juzNumber = backStackEntry.arguments?.getString("juzNumber")?.toIntOrNull()
                         JuzDetailScreen(juzNumber = juzNumber, navController = navController)
                     }
-                    composable("bookmark") { BookmarkScreen(navController) }
                 }
             }
         }
