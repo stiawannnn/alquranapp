@@ -139,7 +139,7 @@ Kami terbuka untuk perbaikan bug, fitur baru, atau peningkatan dokumentasi 🙌
 ## 👤 Kontak Developer
 
 - 📧 Email: [12350113006@students.uin-suska.ac.id](mailto:12350113006@students.uin-suska.ac.id)
-- 🧑‍💻 GitHub: [stiawannnnh](https://github.com/stiawannnnh)
+- 🧑‍💻 GitHub: [stiawannnnn](https://github.com/stiawannnnn)
 
 ---
 
