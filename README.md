@@ -1,127 +1,89 @@
-AlQuranApp
-Selamat datang di AlQuranApp, aplikasi mobile open-source yang dirancang untuk memperkaya pengalaman spiritual Anda bersama Al-Qur'an. Dengan antarmuka intuitif dan ramah pengguna, aplikasi ini menyediakan akses mudah ke ayat-ayat suci, terjemahan, tilawah audio, serta fitur pendukung seperti jadwal sholat dan arah kiblat.
-Fitur Utama
+# 📱 AlQuranApp – Aplikasi Al-Qur'an Android
 
-Membaca Al-Qur'an:
-Jelajahi 114 Surah dan 30 Juz.
-Teks Arab dengan tajwid berwarna, transliterasi Latin, dan panduan baca tajwid.
+**AlQuranApp** adalah aplikasi mobile open-source yang dirancang untuk memperkaya pengalaman spiritual Anda dalam membaca dan mendengarkan Al-Qur'an. Dibangun menggunakan **Kotlin** dan **Jetpack Compose**, aplikasi ini menawarkan UI modern, responsif, dan fitur-fitur islami yang lengkap.
 
+---
 
-Terjemahan:
-Terjemahan akurat dalam bahasa Indonesia.
+## ✨ Fitur Utama
 
+- 📖 **Baca Al-Qur'an**\
+  Jelajahi 114 Surah dan 30 Juz dengan teks Arab bertajwid warna, transliterasi Latin, dan terjemahan Bahasa Indonesia.
 
-Tilawah Audio:
-Dengarkan bacaan merdu dari berbagai Qari terkenal, tersedia per Surah atau Ayah.
-Sorotan berwarna untuk mengikuti tilawah.
+- 🔊 **Tilawah Audio**\
+  Dengarkan bacaan Al-Qur'an dari Qari terkenal, tersedia per ayat atau per surah.
 
+- ⭐ **Bookmark Ayat**\
+  Tandai ayat favorit dan akses kembali dengan mudah.
 
-Pencarian Cerdas:
-Temukan Surah, Ayah, atau Juz dengan cepat menggunakan kata kunci atau nomor.
+- 📌 **Riwayat Bacaan**\
+  Lanjutkan membaca dari posisi terakhir secara otomatis.
 
+- 🔍 **Pencarian Cerdas**\
+  Temukan Surah, Ayat, atau Juz berdasarkan kata kunci atau nomor.
 
-Terakhir Dibaca:
-Lanjutkan membaca dari ayat terakhir dengan fitur auto-scrolling.
+- 🏯 **Jadwal Sholat** *(khusus Pekanbaru)*\
+  Tampilkan waktu sholat harian berdasarkan lokasi pengguna.
 
+- 🤭 **Arah Kiblat**\
+  Penunjuk arah kiblat menggunakan kompas perangkat.
 
-Bookmark:
-Simpan ayat favorit untuk akses cepat.
+- 🔔 **Notifikasi Islami**\
+  Pengingat harian membaca Al-Qur'an dan adzan otomatis.
 
+---
 
-Jadwal Sholat:
-Lihat jadwal sholat (saat ini hanya untuk wilayah Pekanbaru).
+## 🔧 Teknologi yang Digunakan
 
+| Komponen          | Teknologi                          |
+| ----------------- | ---------------------------------- |
+| Bahasa            | Kotlin                             |
+| UI                | Jetpack Compose, Material 3        |
+| Arsitektur        | MVVM                               |
+| Navigasi          | Jetpack Navigation Compose         |
+| Network           | Retrofit, Gson, OkHttp             |
+| Audio             | MediaPlayer                        |
+| Database          | Room (untuk bookmark, riwayat)     |
+| Background Tasks  | WorkManager                        |
+| Penyimpanan Quran | File lokal (bukan database)        |
+| Gambar            | Drawable (bukan library eksternal) |
 
-Arah Kiblat:
-Tentukan arah kiblat berdasarkan lokasi Anda.
+---
 
+## 🚀 Cara Menjalankan Proyek
 
-Notifikasi:
-Pengingat baca Al-Qur'an harian yang dapat disesuaikan.
-Notifikasi adzan otomatis (saat ini untuk waktu Pekanbaru dan sekitarnya).
+1. **Clone Repo**
 
+   ```bash
+   git clone https://github.com/stiawannnnh/alquranapp.git
+   cd alquranapp
+   ```
 
+2. **Buka di Android Studio**\
+   Jalankan `Android Studio`, lalu pilih `Open an Existing Project` dan arahkan ke folder hasil clone.
 
-Panduan Penggunaan
-Berikut cara menggunakan fitur-fitur utama AlQuranApp:
+3. **Sync dan Jalankan**\
+   Pastikan semua dependensi sudah sinkron, lalu jalankan aplikasi pada emulator atau perangkat fisik.
 
-Jelajahi Surah: Buka menu utama untuk memilih Surah atau Juz yang ingin dibaca.
-Panduan Tajwid: Akses panduan membaca Al-Qur'an dengan tajwid di menu "Tajweed".
-Cari Ayat: Gunakan fitur pencarian untuk menemukan ayat berdasarkan kata kunci atau nomor ayat.
-Dengarkan Tilawah: Ketuk ikon audio untuk memutar tilawah. Untuk tilawah per Ayah di detail Juz, klik ayat hingga muncul dropdown, lalu pilih opsi audio. (Catatan: Jika audio tidak langsung berputar, coba beberapa kali karena potensi latensi jaringan.)
-Bookmark Ayat: Klik ayat hingga muncul dropdown, pilih "Bookmark" untuk menyimpan. Lihat ayat tersimpan di menu "Bookmark" dengan navigasi langsung ke ayat tujuan.
-Atur Notifikasi: Sesuaikan pengingat harian atau adzan (aktif/nonaktif) di menu pengaturan.
-Cek Arah Kiblat: Aktifkan fitur kompas di menu utama untuk menentukan arah kiblat.
+---
 
-Teknologi yang Digunakan
+## 🤝 Kontribusi & Fork
 
-Bahasa: Kotlin
-Frontend: Jetpack Compose untuk antarmuka modern dan responsif
-API: AlQuran.cloud API untuk data Al-Qur'an yang andal
-Penjadwalan Tugas: WorkManager untuk tugas latar belakang seperti notifikasi adzan dan pengingat harian (menggunakan SQLite internal untuk penjadwalan)
-Penyimpanan: Tidak menggunakan database untuk data Al-Qur'an; data offline disimpan sebagai file lokal
-IDE: Android Studio (direkomendasikan untuk pengembangan)
+Ingin ikut berkontribusi atau membuat versi Anda sendiri?
 
-Prasyarat
-Sebelum memulai, pastikan Anda memiliki:
+- Klik tombol ⭐ untuk memberi dukungan
+- Klik tombol `Fork` di pojok kanan atas repo ini untuk membuat salinan ke akun GitHub Anda
+- Setelah fork, clone dan modifikasi sesuai kebutuhan Anda
 
-Android Studio (versi terbaru, misalnya Koala atau lebih baru)
-JDK (versi 17 atau lebih baru)
-Perangkat Android (atau emulator) dengan API level 31 (Android 12) atau lebih tinggi
-Koneksi internet untuk mengakses API Al-Qur'an
-Git untuk mengkloning repositori
+Pull request untuk perbaikan atau penambahan fitur sangat diterima!
 
-Instalasi
-Ikuti langkah-langkah berikut untuk menjalankan AlQuranApp secara lokal:
+---
 
-Klon Repositori:
-git clone https://github.com/stiawannnn/alquranapp.git
-cd alquranapp
+## 👤 Informasi Kontak
 
+- Email: [12350113006@students.uin-suska.ac.id](mailto:12350113006@students.uin-suska.ac.id)
+- GitHub: [stiawannnn](https://github.com/stiawannnnh)
 
-Buka di Android Studio:
+---
 
-Buka Android Studio, pilih File > Open, lalu navigasikan ke folder alquranapp.
-Tunggu hingga Gradle menyelesaikan sinkronisasi proyek. (Catatan: Jika terjadi error seperti Expected BEGIN_ARRAY but was BEGIN_OBJECT, periksa model data di SurahDetailViewModel agar sesuai dengan respons API AlQuran.cloud.)
+Terima kasih telah menggunakan AlQuranApp. Semoga aplikasi ini bermanfaat dan menjadi ladang pahala untuk semua yang berkontribusi. ✨
 
-
-Jalankan Aplikasi:
-
-Hubungkan perangkat Android atau jalankan emulator dengan API level 31 atau lebih tinggi.
-Klik tombol Run (ikon segitiga hijau) di Android Studio untuk membangun dan menjalankan aplikasi.
-
-
-Verifikasi Instalasi:
-
-Pastikan aplikasi berjalan di perangkat/emulator dan dapat mengakses data Al-Qur'an melalui API.
-
-
-
-
-Catatan: Jika mengalami masalah Gradle, periksa versi Gradle di file build.gradle dan pastikan kompatibel. Untuk error API, gunakan alat seperti Postman untuk memeriksa respons atau tambahkan logika retry untuk menangani error seperti 429 (Too Many Requests).
-
-Kontribusi
-Kami mengundang Anda untuk berkontribusi pada AlQuranApp demi memperluas manfaatnya. Untuk memulai:
-
-Fork repositori ini.
-
-Buat branch baru:
-git checkout -b fitur/nama-fitur
-
-
-Lakukan perubahan dan commit:
-git commit -m "Menambahkan fitur baru"
-
-
-Push ke branch Anda:
-git push origin fitur/nama-fitur
-
-
-Buka Pull Request di GitHub.
-
-
-
-Melaporkan Masalah
-Jika menemukan bug atau memiliki saran fitur, silakan buka isu di GitHub Issues.
-Lisensi
-Proyek ini dilisensikan di bawah Lisensi MIT. Lihat file LICENSE untuk detail.
