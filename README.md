@@ -46,12 +46,12 @@
 | UI                | Jetpack Compose, Material 3        |
 | Arsitektur        | MVVM                               |
 | Navigasi          | Jetpack Navigation Compose         |
-| Network           | Retrofit, Gson, OkHttp             |
+| Network           | Retrofit, Gson,                    |
 | Audio             | MediaPlayer                        |
-| Database          | Room (bookmark, riwayat)           |
+| Database          | Room (bookmark)                    |
 | Background Tasks  | WorkManager                        |
-| Penyimpanan Quran | File lokal (bukan database)        |
-| Gambar            | Drawable bawaan (tanpa Glide/Picasso) |
+| save Last Reads   | SharedPreferences                  |
+| Gambar            | Drawable bawaan                    |
 
 ---
 
