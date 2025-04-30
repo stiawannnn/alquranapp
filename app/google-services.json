@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "370077735070",
+    "project_id": "quranappbystiawan",
+    "storage_bucket": "quranappbystiawan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:370077735070:android:6f7b8198140c7192fb038f",
+        "android_client_info": {
+          "package_name": "app.dev.quranappbystiawan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "370077735070-qbp35p560smt543t35c16qgi42p1jbds.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.dev.quranappbystiawan",
+            "certificate_hash": "eab53c00b5b87ad29544bba7632b79e19ef2f31f"
+          }
+        },
+        {
+          "client_id": "370077735070-u01pd97r89id4kqdlu68qf1v20nop81l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDck2ZUCd1YgL5AO3u-gVKo8nXgml7j_xE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "370077735070-u01pd97r89id4kqdlu68qf1v20nop81l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
