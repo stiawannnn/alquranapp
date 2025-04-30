@@ -136,7 +136,7 @@ class SplashScreenActivity : ComponentActivity() {
             Column(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(y = (0).dp), // Geser teks sesuai kebutuhan
+                    .offset(y = (16).dp), // Geser teks sesuai kebutuhan
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
