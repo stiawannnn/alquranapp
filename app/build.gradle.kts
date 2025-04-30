@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.quranappbystiawan"
+    namespace = "app.dev.quranappbystiawan"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.quranappbystiawan"
+        applicationId = "app.dev.quranappbystiawan"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
